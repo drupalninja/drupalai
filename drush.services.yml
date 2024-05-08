@@ -1,0 +1,5 @@
+services:
+  drupalai.commands:
+    class: \Drupal\drupalai\Commands\DrupalAiCommands
+    tags:
+      - { name: drush.command }
