@@ -64,8 +64,6 @@ class DrupalAiChatLlama3 implements DrupalAiChatInterface {
         preg_match('/(<files>.*?<\/files>)/s', $text, $matches);
         $text = $matches[1];
 
-        print $text;
-
         if ($text) {
           $this->contents[] = [
             "role" => "assistant",

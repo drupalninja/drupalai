@@ -4,7 +4,6 @@ namespace Drupal\drupalai;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
-use Drupal\Core\Site\Settings;
 
 /**
  * Gemini implementation of DrupalAiChat.
@@ -28,7 +27,14 @@ class DrupalAiChatGemini implements DrupalAiChatInterface {
    *   The response from the API.
    */
   public function getChat(string $prompt): string {
-    $api_key = Settings::get('gemini_api_key');
+    $config = \Drupal::config('drupalai.settings');
+    $api_key = $config->get('gemini_api_key');
+
+    if (!$api_key) {
+      \Drupal::logger('drupalai')->error('Gemini API key not set.');
+      return FALSE;
+    }
+
     $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=' . $api_key;
 
     $client = new Client();

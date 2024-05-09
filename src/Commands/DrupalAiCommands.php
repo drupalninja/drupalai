@@ -6,23 +6,6 @@ use Drupal\drupalai\DrupalAiFactory;
 use Drupal\drupalai\DrupalAiChatInterface;
 use Drush\Commands\DrushCommands;
 
-const DRUPAL_AI_MODULE_PROMPT = <<<EOT
-  You are an expert Drupal 10 developer.
-  You will be writing a module called "MODULE_NAME"
-  MODULE_INSTRUCTIONS
-  Before proceeding, think about Drupal best practices for this module.
-  If there is an issue, an error should be output as a Drupal message.
-  Give me a the response in XML format, no comments or explanation.
-  Example structure is:
-  <files><file><filename>filename.php</filename><content><![CDATA[ <?php ... ?> ]]></content></file></files>
-  where each item is element <file> and underneath the <file> element there are
-  two child elements <filename> and <content>. The first child object is <filename></filename>
-  which is the file name and the second child object is <content></content> which uses <![CDATA[ ... ]]>
-  to wrap the file's content. Make sure any .module file content begins with <?php.
-  Double check the syntax to make sure there are no syntax errors and the code
-  is following Drupal coding standards. Make sure all XML tags are properly closed.
-  EOT;
-
 /**
  * A Drush commandfile.
  */
@@ -58,9 +41,9 @@ class DrupalAiCommands extends DrushCommands {
   public function createModule() {
     // List of available models.
     $models = [
-      'llama3' => 'Llama 3',
-      'openai' => 'OpenAI',
+      'openai' => 'ChatGPT 4',
       'gemini' => 'Gemini',
+      'llama3' => 'Llama 3 (ollama)',
     ];
 
     // Present 3 model type options: llama3, openai, or gemini.
@@ -76,7 +59,7 @@ class DrupalAiCommands extends DrushCommands {
     $this->moduleInstructions = $this->io()->ask('What would you like this module to do?', 'Create 5 article nodes.');
 
     // Log to drush console that a module is being created.
-    $this->io()->write('Creating module: ' . $this->moduleName . ' ...');
+    $this->io()->write("Creating module: {$this->moduleName} ...\n\n");
 
     // Generate module files using AI.
     $this->generateModuleFilesFromAi();
@@ -86,8 +69,9 @@ class DrupalAiCommands extends DrushCommands {
    * Generate Module Files using AI.
    */
   public function generateModuleFilesFromAi(): void {
+    $config = \Drupal::config('drupalai.settings');
 
-    $prompt = str_replace('MODULE_NAME', $this->moduleName, DRUPAL_AI_MODULE_PROMPT);
+    $prompt = str_replace('MODULE_NAME', $this->moduleName, $config->get('module_prompt_template'));
     $prompt = str_replace('MODULE_INSTRUCTIONS', $this->moduleInstructions, $prompt);
 
     $contents = $this->aiModel->getChat($prompt);
@@ -97,6 +81,10 @@ class DrupalAiCommands extends DrushCommands {
     if (!empty($xml)) {
       // Create an empty folder with the module name.
       $path = 'modules/custom/' . $this->moduleName;
+
+      // Log to drush console that a folder is being created.
+      $this->io()->write("- Creating folder: {$path}\n");
+
       if (!file_exists($path)) {
         mkdir($path);
       }
@@ -108,14 +96,20 @@ class DrupalAiCommands extends DrushCommands {
         $path = 'modules/custom/' . $this->moduleName . '/' . trim($filename);
 
         // Create file and any subdirectories.
+        // Log to drush console that a file is being generated.
+        $this->io()->write("- Creating file and subdirectories {$path}\n");
+
         $file_path = self::createFileWithPath($path);
 
-        // Log to drush console that a file is being updated.
-        \Drupal::logger('drupalai')->notice('Updating file: ' . $file_path);
+        // Log to drush console that a file is being populated.
+        $this->io()->write("- Populating file: {$file_path}\n");
 
         // Update file contents.
         file_put_contents($file_path, trim($content));
       }
+    }
+    else {
+      $this->io()->write("No files generated.\n");
     }
   }
 

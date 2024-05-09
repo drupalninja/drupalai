@@ -1,0 +1,7 @@
+drupalai.settings_form:
+  path: '/admin/config/drupalai/settings'
+  defaults:
+    _form: '\Drupal\drupalai\Form\DrupalAiSettingsForm'
+    _title: 'Drupal AI Settings'
+  requirements:
+    _permission: 'administer site configuration'

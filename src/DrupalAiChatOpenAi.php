@@ -2,7 +2,6 @@
 
 namespace Drupal\drupalai;
 
-use Drupal\Core\Site\Settings;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 
@@ -28,7 +27,14 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
    *   The response from the API.
    */
   public function getChat(string $prompt): string {
-    $api_key = Settings::get('openai_api_key');
+    $config = \Drupal::config('drupalai.settings');
+    $api_key = $config->get('openai_api_key');
+
+    if (!$api_key) {
+      \Drupal::logger('drupalai')->error('Gemini API key not set.');
+      return FALSE;
+    }
+
     $url = 'https://api.openai.com/v1/chat/completions';
 
     $client = new Client();
@@ -45,7 +51,7 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
           'Authorization' => 'Bearer ' . $api_key,
         ],
         'json' => [
-          "model" => "gpt-3.5-turbo",
+          "model" => "gpt-4-turbo",
           "messages" => $this->contents,
           "temperature" => 1,
           "max_tokens" => 500,
