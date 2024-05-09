@@ -1,9 +1,10 @@
 <?php
 
-namespace Drupal\drupalai;
+namespace Drupal\drupalai\Models;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use Drupal\drupalai\DrupalAiChatInterface;
 
 /**
  * Llama3 implementation of DrupalAiChat.

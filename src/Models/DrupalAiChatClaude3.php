@@ -1,14 +1,15 @@
 <?php
 
-namespace Drupal\drupalai;
+namespace Drupal\drupalai\Models;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use Drupal\drupalai\DrupalAiChatInterface;
 
 /**
- * OpenAI implementation of DrupalAiChat.
+ * Claude3 implementation of DrupalAiChat.
  */
-class DrupalAiChatOpenAi implements DrupalAiChatInterface {
+class DrupalAiChatClaude3 implements DrupalAiChatInterface {
 
   /**
    * The contents of the request.
@@ -28,14 +29,14 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
    */
   public function getChat(string $prompt): string {
     $config = \Drupal::config('drupalai.settings');
-    $api_key = $config->get('openai_api_key');
+    $api_key = $config->get('claude3_api_key');
 
     if (!$api_key) {
-      \Drupal::logger('drupalai')->error('Gemini API key not set.');
+      \Drupal::logger('drupalai')->error('Claude3 API key not set.');
       return FALSE;
     }
 
-    $url = 'https://api.openai.com/v1/chat/completions';
+    $url = 'https://api.anthropic.com/v1/messages';
 
     $client = new Client();
 
@@ -47,17 +48,14 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
     try {
       $response = $client->request('POST', $url, [
         'headers' => [
-          'Content-Type' => 'application/json',
-          'Authorization' => 'Bearer ' . $api_key,
+          'content-type' => 'application/json',
+          'anthropic-version' => '2023-06-01',
+          'x-api-key' => $api_key,
         ],
         'json' => [
-          "model" => "gpt-4-turbo",
-          "messages" => $this->contents,
-          "temperature" => 1,
+          "model" => "claude-3-opus-20240229",
           "max_tokens" => 4096,
-          "top_p" => 1,
-          "frequency_penalty" => 0,
-          "presence_penalty" => 0,
+          "messages" => $this->contents,
         ],
       ]);
     }
@@ -72,14 +70,20 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
     }
     else {
       $data = $response->getBody()->getContents();
-      $content = json_decode($data)->choices[0]->message->content;
+      $text = json_decode($data)->content[0]->text;
 
-      $this->contents[] = [
-        "role" => "assistant",
-        "content" => $content,
-      ];
+      // Regex to match everything between <filse> and </files>.
+      preg_match('/(<files>.*?<\/files>)/s', $text, $matches);
+      $text = $matches[1];
 
-      return $content;
+      if ($text) {
+        $this->contents[] = [
+          "role" => "assistant",
+          "content" => $text,
+        ];
+
+        return $text;
+      }
     }
   }
 

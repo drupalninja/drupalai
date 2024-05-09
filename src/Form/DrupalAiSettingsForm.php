@@ -11,6 +11,8 @@ const DRUPAL_AI_MODULE_PROMPT = <<<EOT
   MODULE_INSTRUCTIONS
   Before proceeding, think about Drupal best practices for this module.
   If there is an issue, an error should be output as a Drupal message.
+  Entity queries must explicitly set whether the query should be access checked or not. See Drupal\Core\Entity\Query\QueryInterface::accessCheck().
+  One of the files must be a .info.yml file.
   Give me a the response in XML format, no comments or explanation.
   Example structure is:
   <files><file><filename>filename.php</filename><content><![CDATA[ <?php ... ?> ]]></content></file></files>
@@ -66,6 +68,13 @@ class DrupalAiSettingsForm extends ConfigFormBase {
       '#description' => $this->t('Enter the API key for Gemini.'),
     ];
 
+    $form['api_settings']['claude3_api_key'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Claude 3 API Key'),
+      '#default_value' => $config->get('claude3_api_key') ?? '',
+      '#description' => $this->t('Enter the API key for Claude 3.'),
+    ];
+
     $form['ai_settings_instructions'] = [
       '#type' => 'item',
       '#markup' => '<p>' . $this->t('These settings are used to configure the AI settings for the module.') . '</p>',
@@ -93,6 +102,7 @@ class DrupalAiSettingsForm extends ConfigFormBase {
     $config->set('module_prompt_template', $form_state->getValue('module_prompt_template'));
     $config->set('openai_api_key', $form_state->getValue('openai_api_key'));
     $config->set('gemini_api_key', $form_state->getValue('gemini_api_key'));
+    $config->set('claude3_api_key', $form_state->getValue('claude3_api_key'));
     $config->save();
 
     parent::submitForm($form, $form_state);

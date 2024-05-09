@@ -2,6 +2,11 @@
 
 namespace Drupal\drupalai;
 
+use Drupal\drupalai\Models\DrupalAiChatClaude3;
+use Drupal\drupalai\Models\DrupalAiChatGemini;
+use Drupal\drupalai\Models\DrupalAiChatLlama3;
+use Drupal\drupalai\Models\DrupalAiChatOpenAi;
+
 /**
  * Drupal AI Factory.
  */
@@ -30,6 +35,15 @@ class DrupalAiFactory {
     }
     elseif ($model == 'llama3') {
       return new DrupalAiChatLlama3();
+    }
+    elseif ($model == 'claude3') {
+      $api_key = $config->get('claude3_api_key');
+
+      if (!$api_key) {
+        throw new \Exception('Claude 3 API key not set.');
+      }
+
+      return new DrupalAiChatClaude3();
     }
     elseif ($model == 'openai') {
       $api_key = $config->get('openai_api_key');

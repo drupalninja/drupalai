@@ -43,6 +43,7 @@ class DrupalAiCommands extends DrushCommands {
     $models = [
       'openai' => 'ChatGPT 4',
       'gemini' => 'Gemini',
+      'claude3' => 'Claude 3',
       'llama3' => 'Llama 3 (ollama)',
     ];
 
@@ -99,6 +100,10 @@ class DrupalAiCommands extends DrushCommands {
 
       // Log to drush console that a folder is being created.
       $this->io()->write("- Creating folder: {$path}\n");
+
+      if (!file_exists('modules/custom')) {
+        mkdir('modules/custom');
+      }
 
       if (!file_exists($path)) {
         mkdir($path);
