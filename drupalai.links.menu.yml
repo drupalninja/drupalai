@@ -1,0 +1,6 @@
+drupalai.settings:
+  title: 'Drupal AI Settings'
+  description: 'Configure Drupal AI module settings'
+  parent: system.admin_config_development
+  route_name: drupalai.settings_form
+  weight: 50

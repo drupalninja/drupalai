@@ -54,7 +54,7 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
           "model" => "gpt-4-turbo",
           "messages" => $this->contents,
           "temperature" => 1,
-          "max_tokens" => 500,
+          "max_tokens" => 4096,
           "top_p" => 1,
           "frequency_penalty" => 0,
           "presence_penalty" => 0,
