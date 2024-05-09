@@ -1,0 +1,11 @@
+{
+  "name": "drupalninja/drupalai",
+  "description": "A Drupal module for integrating AI capabilities into your website.",
+  "type": "drupal-module",
+  "license": "GPL-2.0-or-later",
+  "authors": [
+    {
+      "name": "Jay Callicott"
+    }
+  ]
+}
