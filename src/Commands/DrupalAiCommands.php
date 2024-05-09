@@ -97,7 +97,7 @@ class DrupalAiCommands extends DrushCommands {
 
         // Create file and any subdirectories.
         // Log to drush console that a file is being generated.
-        $this->io()->write("- Creating file and subdirectories {$path}\n");
+        $this->io()->write("- Creating file and subdirectories: {$path}\n");
 
         $file_path = self::createFileWithPath($path);
 
