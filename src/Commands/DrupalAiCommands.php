@@ -63,6 +63,21 @@ class DrupalAiCommands extends DrushCommands {
 
     // Generate module files using AI.
     $this->generateModuleFilesFromAi();
+
+    // Log to drush console that a module is created.
+    $this->io()->write("Module created: {$this->moduleName}\n");
+
+    // Prompt user to enable the module.
+    $enable = $this->io()->confirm('Would you like to enable the module?', TRUE);
+
+    if ($enable) {
+      // Log to drush console that a module is being enabled.
+      $this->io()->write("Enabling module: {$this->moduleName} ...\n\n");
+
+      // Enable the module programmatically.
+      \Drupal::service('module_installer')->install([$this->moduleName]);
+      $this->io()->write("Module enabled: {$this->moduleName}\n");
+    }
   }
 
   /**
