@@ -4,8 +4,8 @@
 The Drupal AI module provides drush commands for generating code with AI.
 
 ## Features
-- Module code generation supporting multiple AI models
-- CLI powered by Drush
+- Module code generation supporting multiple AI models (Gemini, ChatGPT, Llama 3)
+- Easy-to-use CLI command(s) powered by Drush
 - Simple configuration for managing prompt template(s)
 
 ## Installation
