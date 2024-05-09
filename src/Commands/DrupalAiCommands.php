@@ -36,7 +36,7 @@ class DrupalAiCommands extends DrushCommands {
    * Create module with AI.
    *
    * @command drupalai:createModule
-   * @aliases create-module
+   * @aliases ai-create-module
    */
   public function createModule() {
     // List of available models.
