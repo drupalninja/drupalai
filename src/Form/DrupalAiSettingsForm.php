@@ -13,6 +13,7 @@ const DRUPAL_AI_MODULE_PROMPT = <<<EOT
   If there is an issue, an error should be output as a Drupal message.
   Entity queries must explicitly set whether the query should be access checked or not. See Drupal\Core\Entity\Query\QueryInterface::accessCheck().
   One of the files must be a .info.yml file.
+  drupal_set_message() is Deprecated, Replace with messenger Service \Drupal::messenger()->addMessage()
   Give me a the response in XML format, no comments or explanation.
   Example structure is:
   <files><file><filename>filename.php</filename><content><![CDATA[ <?php ... ?> ]]></content></file></files>
