@@ -57,7 +57,7 @@ class DrupalAiCommands extends DrushCommands {
     $this->moduleName = $this->io()->ask('Enter the name of the module', 'contact_form');
 
     // Prompt user for the functionality of the module.
-    $this->moduleInstructions = $this->io()->ask('What would you like this module to do?', 'Create a basic contact form.');
+    $this->moduleInstructions = $this->io()->ask('What would you like this module to do?', 'Create a basic contact form with title, body, and email');
 
     // Log to drush console that a module is being created.
     $this->io()->write("Creating module: {$this->moduleName} ...\n\n");
