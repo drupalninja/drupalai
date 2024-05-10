@@ -68,7 +68,7 @@ class DrupalAiChatLlama3 implements DrupalAiChatInterface {
 
         // Regex to match everything between <filse> and </files>.
         preg_match('/(<files>.*?<\/files>)/s', $text, $matches);
-        $text = $matches[1];
+        $text = $matches[1] ?? '';
 
         if ($text) {
           $this->contents[] = [

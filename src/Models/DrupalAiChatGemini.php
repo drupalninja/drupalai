@@ -92,31 +92,36 @@ class DrupalAiChatGemini implements DrupalAiChatInterface {
       return FALSE;
     }
 
+    $text = '';
+
     if ($response->getStatusCode() != 200) {
       \Drupal::logger('drupalai')->error($response->getBody()->getContents());
       return FALSE;
     }
     else {
-      $data = $response->getBody()->getContents();
-      $text = json_decode($data)->candidates[0]->content->parts[0]->text;
+      $data = json_decode($response->getBody()->getContents());
 
-      // Regex to match everything between <filse> and </files>.
-      preg_match('/(<files>.*?<\/files>)/s', $text, $matches);
-      $text = $matches[1];
+      if (isset($data->candidates[0]->content->parts[0]->text)) {
+        $text = $data->candidates[0]->content->parts[0]->text;
 
-      if ($text) {
-        $this->contents[] = [
-          "role" => "model",
-          "parts" => [
-            [
-              "text" => $text,
+        // Regex to match everything between <filse> and </files>.
+        preg_match('/(<files>.*?<\/files>)/s', $text, $matches);
+        $text = $matches[1] ?? '';
+
+        if ($text) {
+          $this->contents[] = [
+            "role" => "model",
+            "parts" => [
+              [
+                "text" => $text,
+              ],
             ],
-          ],
-        ];
-
-        return $text;
+          ];
+        }
       }
     }
+
+    return $text;
   }
 
 }
