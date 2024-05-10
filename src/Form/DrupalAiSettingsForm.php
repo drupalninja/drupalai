@@ -80,6 +80,14 @@ class DrupalAiSettingsForm extends ConfigFormBase {
       '#markup' => '<p>' . $this->t('These settings are used to configure the AI settings for the module.') . '</p>',
     ];
 
+    // Configure Ollama address.
+    $form['api_settings']['ollama_address'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Ollama Address'),
+      '#default_value' => $config->get('ollama_address') ?? 'http://host.docker.internal:11434',
+      '#description' => $this->t('Address for Ollama, defaults to http://host.docker.internal:11434.'),
+    ];
+
     $form['module_prompt_template'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Module Prompt Template'),
@@ -103,6 +111,7 @@ class DrupalAiSettingsForm extends ConfigFormBase {
     $config->set('openai_api_key', $form_state->getValue('openai_api_key'));
     $config->set('gemini_api_key', $form_state->getValue('gemini_api_key'));
     $config->set('claude3_api_key', $form_state->getValue('claude3_api_key'));
+    $config->set('ollama_address', $form_state->getValue('ollama_address'));
     $config->save();
 
     parent::submitForm($form, $form_state);

@@ -30,7 +30,10 @@ class DrupalAiChatLlama3 implements DrupalAiChatInterface {
   public function getChat(string $prompt): string {
     $client = new Client();
 
-    $url = 'http://host.docker.internal:11434/api/chat';
+    $config = \Drupal::config('drupalai.settings');
+    $ollama_address = $config->get('ollama_address') ?? 'http://host.docker.internal:11434';
+
+    $url = $ollama_address . '/api/chat';
 
     $this->contents[] = [
       "role" => "user",
