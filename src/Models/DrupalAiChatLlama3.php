@@ -37,6 +37,8 @@ class DrupalAiChatLlama3 implements DrupalAiChatInterface {
       "content" => $prompt,
     ];
 
+    $text = '';
+
     try {
       $response = $client->request('POST', $url, [
         'json' => [
@@ -70,11 +72,11 @@ class DrupalAiChatLlama3 implements DrupalAiChatInterface {
             "role" => "assistant",
             "content" => $text,
           ];
-
-          return $text;
         }
       }
     }
+
+    return $text;
   }
 
 }

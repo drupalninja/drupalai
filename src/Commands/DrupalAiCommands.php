@@ -54,37 +54,39 @@ class DrupalAiCommands extends DrushCommands {
     $this->aiModel = DrupalAiFactory::build($model);
 
     // Prompt user for name of the module.
-    $this->moduleName = $this->io()->ask('Enter the name of the module', 'acme_articles');
+    $this->moduleName = $this->io()->ask('Enter the name of the module', 'contact_form');
 
     // Prompt user for the functionality of the module.
-    $this->moduleInstructions = $this->io()->ask('What would you like this module to do?', 'Create 5 article nodes.');
+    $this->moduleInstructions = $this->io()->ask('What would you like this module to do?', 'Create a basic contact form.');
 
     // Log to drush console that a module is being created.
     $this->io()->write("Creating module: {$this->moduleName} ...\n\n");
 
     // Generate module files using AI.
-    $this->generateModuleFilesFromAi();
+    $module_created = $this->generateModuleFilesFromAi();
 
-    // Log to drush console that a module is created.
-    $this->io()->write("Module created: {$this->moduleName}\n");
+    if ($module_created) {
+      // Log to drush console that a module is created.
+      $this->io()->write("Module created: {$this->moduleName}\n");
 
-    // Prompt user to enable the module.
-    $enable = $this->io()->confirm('Would you like to enable the module?', TRUE);
+      // Prompt user to enable the module.
+      $enable = $this->io()->confirm('Would you like to enable the module?', TRUE);
 
-    if ($enable) {
-      // Log to drush console that a module is being enabled.
-      $this->io()->write("Enabling module: {$this->moduleName} ...\n\n");
+      if ($enable) {
+        // Log to drush console that a module is being enabled.
+        $this->io()->write("Enabling module: {$this->moduleName} ...\n\n");
 
-      // Enable the module programmatically.
-      \Drupal::service('module_installer')->install([$this->moduleName]);
-      $this->io()->write("Module enabled: {$this->moduleName}\n");
+        // Enable the module programmatically.
+        \Drupal::service('module_installer')->install([$this->moduleName]);
+        $this->io()->write("Module enabled: {$this->moduleName}\n");
+      }
     }
   }
 
   /**
    * Generate Module Files using AI.
    */
-  public function generateModuleFilesFromAi(): void {
+  public function generateModuleFilesFromAi(): bool {
     $config = \Drupal::config('drupalai.settings');
 
     $prompt = str_replace('MODULE_NAME', $this->moduleName, $config->get('module_prompt_template'));
@@ -92,7 +94,7 @@ class DrupalAiCommands extends DrushCommands {
 
     $contents = $this->aiModel->getChat($prompt);
 
-    $xml = simplexml_load_string($contents);
+    $xml = @simplexml_load_string($contents);
 
     if (!empty($xml)) {
       // Create an empty folder with the module name.
@@ -130,7 +132,9 @@ class DrupalAiCommands extends DrushCommands {
     }
     else {
       $this->io()->write("No files generated.\n");
+      return FALSE;
     }
+    return TRUE;
   }
 
   /**
