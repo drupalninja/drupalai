@@ -6,23 +6,29 @@ use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 
 const DRUPAL_AI_MODULE_PROMPT = <<<EOT
-  You are an expert Drupal 10 developer.
-  You will be writing a module called "MODULE_NAME"
-  MODULE_INSTRUCTIONS
-  Before proceeding, think about Drupal best practices for this module.
-  If there is an issue, an error should be output as a Drupal message.
-  Entity queries must explicitly set whether the query should be access checked or not. See Drupal\Core\Entity\Query\QueryInterface::accessCheck().
-  One of the files must be a .info.yml file.
-  drupal_set_message() is Deprecated, Replace with messenger Service \Drupal::messenger()->addMessage()
-  Give me a the response in XML format, no comments or explanation.
-  Example structure is:
-  <files><file><filename>filename.php</filename><content><![CDATA[ <?php ... ?> ]]></content></file></files>
-  where each item is element <file> and underneath the <file> element there are
-  two child elements <filename> and <content>. The first child object is <filename></filename>
-  which is the file name and the second child object is <content></content> which uses <![CDATA[ ... ]]>
-  to wrap the file's content. Make sure any .module file content begins with <?php.
-  Double check the syntax to make sure there are no syntax errors and the code
-  is following Drupal coding standards. Make sure all XML tags are properly closed.
+  You are an experienced Drupal 10 developer tasked with creating a custom module named "MODULE_NAME". Consider Drupal best practices as you develop this module.
+
+  MODULE_INSTRUCTIONS:
+  Before proceeding, ensure adherence to Drupal coding standards and best practices. Any issues encountered during development should be reported as Drupal messages.
+
+  Important Guidelines:
+  1. Entity queries must explicitly set whether the query should be access checked or not. Refer to Drupal\Core\Entity\Query\QueryInterface::accessCheck().
+  2. Include a .info.yml file as part of the module's structure.
+  3. Deprecated function drupal_set_message() should be replaced with the messenger service: \Drupal::messenger()->addMessage().
+
+  Your task is to provide a response in XML format, adhering to the example structure provided below. Ensure proper syntax and closure of all XML tags.
+
+  Example Structure:
+  <files>
+    <file>
+      <filename>MODULE_NAME.info.yml</filename>
+      <content><![CDATA[ ... ]]></content>
+    </file>
+    <file>
+      <filename>MODULE_NAME.module</filename>
+      <content><![CDATA[ <?php ... ?> ]]></content>
+    </file>
+  </files>
   EOT;
 
 /**
