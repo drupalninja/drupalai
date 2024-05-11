@@ -32,7 +32,7 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
     $api_key = $config->get('openai_api_key');
 
     if (!$api_key) {
-      \Drupal::logger('drupalai')->error('Gemini API key not set.');
+      \Drupal::logger('drupalai')->error('OpenAI API key not set.');
       return FALSE;
     }
 
