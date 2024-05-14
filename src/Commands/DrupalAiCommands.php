@@ -41,7 +41,7 @@ class DrupalAiCommands extends DrushCommands {
   public function createModule() {
     // List of available models.
     $models = [
-      'openai' => 'ChatGPT 4',
+      'openai' => 'ChatGPT-4o',
       'gemini' => 'Gemini',
       'claude3' => 'Claude 3',
       'llama3' => 'Llama 3 (ollama)',

@@ -52,7 +52,7 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
           'Authorization' => 'Bearer ' . $api_key,
         ],
         'json' => [
-          "model" => "gpt-4-turbo",
+          "model" => "gpt-4o",
           "messages" => $this->contents,
           "temperature" => 1,
           "max_tokens" => 4096,
@@ -73,14 +73,20 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
     }
     else {
       $data = $response->getBody()->getContents();
-      $content = json_decode($data)->choices[0]->message->content;
+      $text = json_decode($data)->choices[0]->message->content;
 
-      $this->contents[] = [
-        "role" => "assistant",
-        "content" => $content,
-      ];
+      // Regex to match everything between <filse> and </files>.
+      preg_match('/(<files>.*?<\/files>)/s', $text, $matches);
+      $text = $matches[1] ?? '';
 
-      return $content;
+      if ($text) {
+        $this->contents[] = [
+          "role" => "assistant",
+          "content" => $text,
+        ];
+
+        return $text;
+      }
     }
   }
 
