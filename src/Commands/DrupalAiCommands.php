@@ -89,7 +89,7 @@ class DrupalAiCommands extends DrushCommands {
   public function generateModuleFilesFromAi(): bool {
     $config = \Drupal::config('drupalai.settings');
 
-    $prompt = str_replace('MODULE_NAME', $this->moduleName, $config->get('module_prompt_template'));
+    $prompt = str_replace('MODULE_NAME', $this->moduleName, $config->get('module_prompt_template', DRUPAL_AI_MODULE_PROMPT));
     $prompt = str_replace('MODULE_INSTRUCTIONS', $this->moduleInstructions, $prompt);
 
     $contents = $this->aiModel->getChat($prompt);

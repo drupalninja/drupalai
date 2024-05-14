@@ -67,6 +67,8 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
       return FALSE;
     }
 
+    $text = '';
+
     if ($response->getStatusCode() != 200) {
       \Drupal::logger('drupalai')->error($response->getBody()->getContents());
       return FALSE;
@@ -84,10 +86,10 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
           "role" => "assistant",
           "content" => $text,
         ];
-
-        return $text;
       }
     }
+
+    return $text;
   }
 
 }

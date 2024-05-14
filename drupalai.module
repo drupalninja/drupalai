@@ -4,3 +4,29 @@
  * @file
  * DrupalAI module.
  */
+
+const DRUPAL_AI_MODULE_PROMPT = <<<EOT
+  You are an experienced Drupal 10 developer tasked with creating a custom module named "MODULE_NAME". Consider Drupal best practices as you develop this module.
+
+  MODULE_INSTRUCTIONS:
+  Before proceeding, ensure adherence to Drupal coding standards and best practices. Any issues encountered during development should be reported as Drupal messages.
+
+  Important Guidelines:
+  1. Entity queries must explicitly set whether the query should be access checked or not. Refer to Drupal\Core\Entity\Query\QueryInterface::accessCheck().
+  2. Include a .info.yml file as part of the module's structure.
+  3. Deprecated function drupal_set_message() should be replaced with the messenger service: \Drupal::messenger()->addMessage().
+
+  Your task is to provide a response in XML format, adhering to the example structure provided below. Ensure proper syntax and closure of all XML tags.
+
+  Example Structure:
+  <files>
+    <file>
+      <filename>MODULE_NAME.info.yml</filename>
+      <content><![CDATA[ ... ]]></content>
+    </file>
+    <file>
+      <filename>MODULE_NAME.module</filename>
+      <content><![CDATA[ <?php ... ?> ]]></content>
+    </file>
+  </files>
+  EOT;
