@@ -2,9 +2,10 @@
 
 namespace Drupal\drupalai\Commands;
 
-use Drupal\drupalai\DrupalAiFactory;
 use Drupal\drupalai\DrupalAiChatInterface;
+use Drupal\drupalai\DrupalAiFactory;
 use Drush\Commands\DrushCommands;
+use Drupal\Core\Site\Settings;
 
 /**
  * A Drush commandfile.
@@ -16,14 +17,28 @@ class DrupalAiCommands extends DrushCommands {
    *
    * @var string
    */
-  private $moduleName;
+  private $moduleName = '';
 
   /**
    * Module instructions.
    *
    * @var string
    */
-  private $moduleInstructions;
+  private $moduleInstructions = '';
+
+  /**
+   * Refactor instructions.
+   *
+   * @var string
+   */
+  private $refactorInstructions = '';
+
+  /**
+   * Refactor content.
+   *
+   * @var string
+   */
+  private $refactorContent = '';
 
   /**
    * AI model.
@@ -84,12 +99,112 @@ class DrupalAiCommands extends DrushCommands {
   }
 
   /**
+   * Generate Code/Config using AI.
+   *
+   * @command drupalai:refactorConfig
+   * @aliases ai-refactor-config
+   */
+  public function refactorConfig() {
+    // List of available models.
+    $models = [
+      'openai' => 'ChatGPT-4o',
+      'gemini' => 'Gemini',
+      'claude3' => 'Claude 3',
+      'llama3' => 'Llama 3 (ollama)',
+    ];
+
+    // Present 3 model type options: llama3, openai, or gemini.
+    $model = $this->io()->choice('Select the model type', $models, 0);
+
+    // Build AI model.
+    $this->aiModel = DrupalAiFactory::build($model);
+
+    // Prompt user for search string.
+    $search_text = $this->io()->ask('Enter search string to find files you would like to change', '^block_content.type');
+
+    $results = $this->searchFiles($search_text);
+
+    // Show files to the user and prompt to continue.
+    $this->io()->write("Files found:\n");
+    $this->io()->listing($results);
+
+    // Prompt user to continue.
+    $continue = $this->io()->confirm('Would you like to refactor these files?', TRUE);
+
+    if ($continue) {
+      // Get the list of files to refactor and content of those files.
+      foreach ($results as $file) {
+        $contents = file_get_contents(Settings::get('config_sync_directory') . '/' . $file);
+        $this->refactorContent .= "File: {$file}\nContent: {$contents}\n\n";
+      }
+
+      // Prompt user for the new configuration.
+      $this->refactorInstructions = $this->io()->ask('Enter the changes you would like to make', 'Rewrite the block descriptions in old English');
+
+      // Log to drush console that configuration is being refactored.
+      $this->io()->write("Refactoring configuration ...\n\n");
+
+      // Refactor files using AI.
+      $this->refactorFilesFromAi();
+    }
+  }
+
+  /**
+   * Refactor Files using AI.
+   */
+  public function refactorFilesFromAi() {
+    $config = \Drupal::config('drupalai.settings');
+
+    $prompt = str_replace('REFACTOR_INSTRUCTIONS', $this->refactorInstructions, $config->get('refactor_prompt_template') ?? DRUPALAI_MODULE_PROMPT);
+    $prompt = str_replace('REFACTOR_FILES', $this->refactorContent, $prompt);
+
+    $contents = $this->aiModel->getChat($prompt);
+
+    $xml = @simplexml_load_string($contents);
+
+    if (!empty($xml)) {
+      foreach ($xml->file as $file) {
+        $filename = (string) $file->filename;
+        $newfilename = (string) $file->newfilename;
+        $content = (string) $file->content;
+
+        $path = Settings::get('config_sync_directory') . '/' . trim($filename);
+
+        if (!file_exists($path)) {
+          $this->io()->write("File not found: {$path}\n");
+          continue;
+        }
+        else {
+          // Log to drush console that a file is being refactored.
+          $this->io()->write("- Updating file contents: {$path}\n");
+
+          // Trim white space at the beginning of each line of content.
+          $content = preg_replace('/^\s+/m', '', $content);
+
+          // Update file contents.
+          file_put_contents($path, trim($content));
+        }
+
+        // If new filename is provided, rename the file.
+        if (!empty($newfilename)) {
+          $new_path = Settings::get('config_sync_directory') . '/' . trim($newfilename);
+
+          // Log to drush console that a file is being renamed.
+          $this->io()->write("- Renaming file: {$path} to {$new_path}\n");
+
+          rename($path, $new_path);
+        }
+      }
+    }
+  }
+
+  /**
    * Generate Module Files using AI.
    */
   public function generateModuleFilesFromAi(): bool {
     $config = \Drupal::config('drupalai.settings');
 
-    $prompt = str_replace('MODULE_NAME', $this->moduleName, $config->get('module_prompt_template') ?? DRUPAL_AI_MODULE_PROMPT);
+    $prompt = str_replace('MODULE_NAME', $this->moduleName, $config->get('module_prompt_template') ?? DRUPALAI_MODULE_PROMPT);
     $prompt = str_replace('MODULE_INSTRUCTIONS', $this->moduleInstructions, $prompt);
 
     $contents = $this->aiModel->getChat($prompt);
@@ -161,6 +276,54 @@ class DrupalAiCommands extends DrushCommands {
     }
 
     return $file_path;
+  }
+
+  /**
+   * Search Files.
+   *
+   * @param string $search_text
+   *   The search text.
+   *
+   * @return array
+   *   The search results.
+   */
+  public function searchFiles($search_text) {
+    $results = [];
+
+    // Locate the Drupal configuration directory.
+    $config_path = Settings::get('config_sync_directory');
+
+    $file_system = \Drupal::service('file_system');
+
+    // Build a regular expression for case-insensitive search.
+    $pattern = "/.*{$search_text}.*/i";
+
+    $search_results = $file_system->scanDirectory($config_path, $pattern);
+
+    if ($search_results) {
+      foreach ($search_results as $item) {
+        $results[] = $item->filename;
+      }
+    }
+
+    $files = scandir($config_path);
+
+    foreach ($files as $file) {
+      // Skip . and .. directories.
+      if ($file == '.' || $file == '..') {
+        continue;
+      }
+
+      // Get the file contents.
+      $contents = file_get_contents($config_path . '/' . $file);
+
+      // Search for the text in the file contents.
+      if (stripos($contents, $search_text) !== FALSE) {
+        $results[] = $file;
+      }
+    }
+
+    return array_unique($results);
   }
 
 }

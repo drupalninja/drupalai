@@ -5,10 +5,11 @@
  * DrupalAI module.
  */
 
-const DRUPAL_AI_MODULE_PROMPT = <<<EOT
+const DRUPALAI_MODULE_PROMPT = <<<EOT
   You are an experienced Drupal 10 developer tasked with creating a custom module named "MODULE_NAME". Consider Drupal best practices as you develop this module.
 
-  MODULE_INSTRUCTIONS:
+  MODULE_INSTRUCTIONS
+
   Before proceeding, ensure adherence to Drupal coding standards and best practices. Any issues encountered during development should be reported as Drupal messages.
 
   Important Guidelines:
@@ -27,6 +28,46 @@ const DRUPAL_AI_MODULE_PROMPT = <<<EOT
     <file>
       <filename>MODULE_NAME.module</filename>
       <content><![CDATA[ <?php ... ?> ]]></content>
+    </file>
+  </files>
+  EOT;
+
+const DRUPALAI_REFACTOR_PROMPT = <<<EOT
+  You are an experienced Drupal 10 developer tasked with refactoring configuration within a Drupal config folder.
+
+  Files to refactor:
+  REFACTOR_FILES
+  REFACTOR_INSTRUCTIONS
+
+  Before proceeding, ensure adherence to Drupal coding standards and best practices. Any issues encountered during development should be reported as Drupal messages.
+
+  Your task is to provide a response in XML format, adhering to the example structure provided below. Ensure proper syntax and closure of all XML tags.
+
+  Example Structure:
+  <files>
+    <file>
+      <filename>field.storage.block_content.field_script.yml</filename>
+      <newfilename>field.storage.block_content.field_script_new.yml</newfilename>
+      <content>uuid: 172a5677-c10d-4c36-9331-5cccdcbbcbb1
+        langcode: en
+        status: true
+        dependencies:
+          module:
+            - block_content
+            - text
+        id: block_content.field_script
+        field_name: field_script
+        entity_type: block_content
+        type: text_long
+        settings: {  }
+        module: text
+        locked: false
+        cardinality: 1
+        translatable: true
+        indexes: {  }
+        persist_with_no_fields: false
+        custom_storage: false
+      </content>
     </file>
   </files>
   EOT;

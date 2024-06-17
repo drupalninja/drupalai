@@ -76,7 +76,18 @@ class DrupalAiSettingsForm extends ConfigFormBase {
         The keywords \'MODULE_NAME\' and \'MODULE_INSTRUCTIONS\' are needed as well
         as the XML format: <files><file><filename></filename><content></content></file></files>.'),
       '#required' => TRUE,
-      '#default_value' => $config->get('module_prompt_template') ?? DRUPAL_AI_MODULE_PROMPT,
+      '#default_value' => $config->get('module_prompt_template') ?? DRUPALAI_MODULE_PROMPT,
+      '#rows' => 15,
+    ];
+
+    $form['refactor_prompt_template'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Refactor Prompt Template'),
+      '#description' => $this->t('Enter the template for the module prompt.
+        The keyword \'REFACTOR_INSTRUCTIONS\' are needed as well
+        as the XML format: <files><file><filename></filename><content></content></file></files>.'),
+      '#required' => TRUE,
+      '#default_value' => $config->get('refactor_prompt_template') ?? DRUPALAI_REFACTOR_PROMPT,
       '#rows' => 15,
     ];
 
@@ -89,6 +100,7 @@ class DrupalAiSettingsForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $config = $this->config('drupalai.settings');
     $config->set('module_prompt_template', $form_state->getValue('module_prompt_template'));
+    $config->set('refactor_prompt_template', $form_state->getValue('refactor_prompt_template'));
     $config->set('openai_api_key', $form_state->getValue('openai_api_key'));
     $config->set('gemini_api_key', $form_state->getValue('gemini_api_key'));
     $config->set('claude3_api_key', $form_state->getValue('claude3_api_key'));
