@@ -120,7 +120,7 @@ class DrupalAiCommands extends DrushCommands {
     $this->aiModel = DrupalAiFactory::build($model);
 
     // Prompt user for search string.
-    $search_text = $this->io()->ask('Enter search string to find files you would like to change', 'field_card');
+    $search_text = $this->io()->ask('Enter search string to find files you would like to change', '^block_content.type');
 
     $results = $this->searchFiles($search_text);
 
@@ -139,7 +139,7 @@ class DrupalAiCommands extends DrushCommands {
       }
 
       // Prompt user for the new configuration.
-      $this->refactorInstructions = $this->io()->ask('Enter the changes you would like to make', 'Change field_card to field_card_item');
+      $this->refactorInstructions = $this->io()->ask('Enter the changes you would like to make', 'Rewrite the block descriptions in old English');
 
       // Log to drush console that configuration is being refactored.
       $this->io()->write("Refactoring configuration ...\n\n");
