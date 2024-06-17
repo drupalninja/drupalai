@@ -155,7 +155,7 @@ class DrupalAiCommands extends DrushCommands {
   public function refactorFilesFromAi() {
     $config = \Drupal::config('drupalai.settings');
 
-    $prompt = str_replace('REFACTOR_INSTRUCTIONS', $this->refactorInstructions, $config->get('refactor_prompt_template') ?? DRUPALAI_MODULE_PROMPT);
+    $prompt = str_replace('REFACTOR_INSTRUCTIONS', $this->refactorInstructions, $config->get('refactor_prompt_template') ?? DRUPALAI_REFACTOR_PROMPT);
     $prompt = str_replace('REFACTOR_FILES', $this->refactorContent, $prompt);
 
     $contents = $this->aiModel->getChat($prompt);
