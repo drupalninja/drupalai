@@ -178,6 +178,9 @@ class DrupalAiCommands extends DrushCommands {
           // Log to drush console that a file is being refactored.
           $this->io()->write("- Updating file contents: {$path}\n");
 
+          // Trim white space at the beginning of each line of content.
+          $content = preg_replace('/^\s+/m', '', $content);
+
           // Update file contents.
           file_put_contents($path, trim($content));
         }
