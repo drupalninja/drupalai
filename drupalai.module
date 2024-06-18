@@ -21,14 +21,14 @@ const DRUPALAI_MODULE_PROMPT = <<<EOT
 
   Example Structure:
   <files>
-    <file>
-      <filename>MODULE_NAME.info.yml</filename>
-      <content><![CDATA[ ... ]]></content>
-    </file>
-    <file>
-      <filename>MODULE_NAME.module</filename>
-      <content><![CDATA[ <?php ... ?> ]]></content>
-    </file>
+  <file>
+  <filename>MODULE_NAME.info.yml</filename>
+  <content><![CDATA[ ... ]]></content>
+  </file>
+  <file>
+  <filename>MODULE_NAME.module</filename>
+  <content><![CDATA[ <?php ... ?> ]]></content>
+  </file>
   </files>
   EOT;
 
@@ -39,35 +39,27 @@ const DRUPALAI_REFACTOR_PROMPT = <<<EOT
   REFACTOR_FILES
   REFACTOR_INSTRUCTIONS
 
-  Before proceeding, ensure adherence to Drupal coding standards and best practices. Any issues encountered during development should be reported as Drupal messages.
-
-  Your task is to provide a response in XML format, adhering to the example structure provided below. Ensure proper syntax and closure of all XML tags.
+  Your task is to provide a response in XML format, adhering to the example structure provided below. Ensure proper syntax and closure of all XML tags. Do not
+  populate the <newfilename> tag if the file is not being renamed. Do not add any extra indentation to the XML response.
+  IMPORTANT: Do not use single quotes in yaml values unless they are escaped.
 
   Example Structure:
   <files>
-    <file>
-      <filename>field.storage.block_content.field_script.yml</filename>
-      <newfilename>field.storage.block_content.field_script_new.yml</newfilename>
-      <content>uuid: 172a5677-c10d-4c36-9331-5cccdcbbcbb1
-        langcode: en
-        status: true
-        dependencies:
-          module:
-            - block_content
-            - text
-        id: block_content.field_script
-        field_name: field_script
-        entity_type: block_content
-        type: text_long
-        settings: {  }
-        module: text
-        locked: false
-        cardinality: 1
-        translatable: true
-        indexes: {  }
-        persist_with_no_fields: false
-        custom_storage: false
-      </content>
-    </file>
+  <file>
+  <filename>block_content.type.hero.yml</filename>
+  <newfilename>block_content.type.hero_new.yml</newfilename>
+  <content>
+  uuid: 9393410c-155f-4912-b842-d60667df90e7
+  langcode: en
+  status: true
+  dependencies: {  }
+  _core:
+    default_config_hash: i4CAjalynce0AOHc1WvRqx9clxiYDWIoJ0eLJzu_L6k
+  id: hero
+  label: Hero
+  revision: 0
+  description: 'Example '' description '' with single quotes escaped''.'
+  </content>
+  </file>
   </files>
   EOT;
