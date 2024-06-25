@@ -19,6 +19,20 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
   private $contents = [];
 
   /**
+   * The model to use.
+   *
+   * @var string
+   */
+  private $model;
+
+  /**
+   * Constructor.
+   */
+  public function __construct($model = 'gpt-4o') {
+    $this->model = $model;
+  }
+
+  /**
    * Get Chat.
    *
    * @param string $prompt
@@ -52,7 +66,7 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
           'Authorization' => 'Bearer ' . $api_key,
         ],
         'json' => [
-          "model" => "gpt-4o",
+          "model" => $this->model,
           "messages" => $this->contents,
           "temperature" => 1,
           "max_tokens" => 4096,

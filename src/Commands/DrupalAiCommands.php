@@ -48,22 +48,27 @@ class DrupalAiCommands extends DrushCommands {
   private DrupalAiChatInterface $aiModel;
 
   /**
+   * Models.
+   *
+   * @var array
+   */
+  private $models = [
+    'openai' => 'ChatGPT-4o',
+    'gpt-3.5-turbo-0125' => 'ChatGPT 3.5 Turbo',
+    'gemini' => 'Gemini',
+    'claude3' => 'Claude 3',
+    'llama3' => 'Llama 3 (ollama)',
+  ];
+
+  /**
    * Create module with AI.
    *
    * @command drupalai:createModule
    * @aliases ai-create-module
    */
   public function createModule() {
-    // List of available models.
-    $models = [
-      'openai' => 'ChatGPT-4o',
-      'gemini' => 'Gemini',
-      'claude3' => 'Claude 3',
-      'llama3' => 'Llama 3 (ollama)',
-    ];
-
     // Present 3 model type options: llama3, openai, or gemini.
-    $model = $this->io()->choice('Select the model type', $models, 0);
+    $model = $this->io()->choice('Select the model type', $this->models, 0);
 
     // Build AI model.
     $this->aiModel = DrupalAiFactory::build($model);
@@ -105,16 +110,8 @@ class DrupalAiCommands extends DrushCommands {
    * @aliases ai-refactor-config
    */
   public function refactorConfig() {
-    // List of available models.
-    $models = [
-      'openai' => 'ChatGPT-4o',
-      'gemini' => 'Gemini',
-      'claude3' => 'Claude 3',
-      'llama3' => 'Llama 3 (ollama)',
-    ];
-
     // Present 3 model type options: llama3, openai, or gemini.
-    $model = $this->io()->choice('Select the model type', $models, 0);
+    $model = $this->io()->choice('Select the model type', $this->models, 0);
 
     // Build AI model.
     $this->aiModel = DrupalAiFactory::build($model);

@@ -52,7 +52,16 @@ class DrupalAiFactory {
         throw new \Exception('OpenAI key not set.');
       }
 
-      return new DrupalAiChatOpenAi();
+      return new DrupalAiChatOpenAi($model);
+    }
+    elseif ($model == 'gpt-3.5-turbo-0125') {
+      $api_key = $config->get('openai_api_key');
+
+      if (!$api_key) {
+        throw new \Exception('OpenAI key not set.');
+      }
+
+      return new DrupalAiChatOpenAi($model);
     }
 
     throw new \Exception('Invalid model');
