@@ -2,10 +2,11 @@
 
 namespace Drupal\drupalai\Commands;
 
+use Drupal\Core\Cache\CacheBackendInterface;
+use Drupal\Core\Site\Settings;
+use Drush\Commands\DrushCommands;
 use Drupal\drupalai\DrupalAiChatInterface;
 use Drupal\drupalai\DrupalAiFactory;
-use Drush\Commands\DrushCommands;
-use Drupal\Core\Site\Settings;
 
 /**
  * A Drush commandfile.
@@ -32,6 +33,13 @@ class DrupalAiCommands extends DrushCommands {
    * @var string
    */
   private $refactorInstructions = '';
+
+  /**
+   * Block instructions.
+   *
+   * @var string
+   */
+  private $blockInstructions = '';
 
   /**
    * Refactor content.
@@ -61,13 +69,64 @@ class DrupalAiCommands extends DrushCommands {
   ];
 
   /**
+   * Generate Block configuration using AI.
+   *
+   * @command drupalai:createBlock
+   * @aliases ai-create-block
+   */
+  public function createBlock() {
+    $model = $this->io()->choice('Select the model type', $this->models, 0);
+
+    // Build AI model.
+    $this->aiModel = DrupalAiFactory::build($model);
+
+    // Prompt user for the new configuration.
+    $this->blockInstructions = $this->io()->ask('Describe the block type you would like to create', 'Create a new block type for a carousel of client testimonials');
+
+    // Log to drush console that configuration is being created.
+    $this->io()->write("Creating block configuration ...\n\n");
+
+    // Refactor files using AI.
+    $this->generateBlockFilesFromAi();
+  }
+
+  /**
+   * Generate Block Files using AI.
+   */
+  public function generateBlockFilesFromAi() {
+    // Pass in Drupal configuration types for context.
+    $drupal_config_types = $this->getBlockFieldDefinitions();
+
+    $prompt = str_replace('DRUPAL_TYPES', $drupal_config_types, DRUPALAI_BLOCK_PROMPT);
+    $prompt = str_replace('CONFIG_INSTRUCTIONS', $this->blockInstructions, $prompt);
+
+    $contents = $this->aiModel->getChat($prompt);
+
+    $xml = @simplexml_load_string($contents);
+
+    if (!empty($xml)) {
+      foreach ($xml->file as $file) {
+        $filename = (string) $file->filename;
+        $content = (string) $file->content;
+
+        $path = Settings::get('config_sync_directory') . '/' . trim($filename);
+
+        // Create configuration file.
+        $this->io()->write("- Creating file: {$filename} ...\n");
+
+        // Update file contents.
+        file_put_contents($path, trim($content));
+      }
+    }
+  }
+
+  /**
    * Create module with AI.
    *
    * @command drupalai:createModule
    * @aliases ai-create-module
    */
   public function createModule() {
-    // Present 3 model type options: llama3, openai, or gemini.
     $model = $this->io()->choice('Select the model type', $this->models, 0);
 
     // Build AI model.
@@ -110,7 +169,6 @@ class DrupalAiCommands extends DrushCommands {
    * @aliases ai-refactor-config
    */
   public function refactorConfig() {
-    // Present 3 model type options: llama3, openai, or gemini.
     $model = $this->io()->choice('Select the model type', $this->models, 0);
 
     // Build AI model.
@@ -318,6 +376,117 @@ class DrupalAiCommands extends DrushCommands {
     }
 
     return array_unique($results);
+  }
+
+  /**
+   * Method to get field definitions of block content types and paragraph types.
+   *
+   * @return string
+   *   The field definitions in plain text format.
+   */
+  public function getBlockFieldDefinitions() {
+    // Check if the field definitions data is in the cache.
+    $cache = \Drupal::cache()->get('block_field_definitions_data');
+
+    if ($cache) {
+      // Return the cached data if available.
+      return $cache->data;
+    }
+
+    // Load the entity type manager service.
+    $entity_type_manager = \Drupal::entityTypeManager();
+
+    // Get all custom block content types.
+    $block_content_type_storage = $entity_type_manager->getStorage('block_content_type');
+
+    // Load all custom block content types.
+    $block_content_types = $block_content_type_storage->loadMultiple();
+
+    // Get all paragraph types.
+    $paragraph_type_storage = $entity_type_manager->getStorage('paragraphs_type');
+
+    // Load all paragraph types.
+    $paragraph_types = $paragraph_type_storage->loadMultiple();
+
+    // Initialize an array to store field definitions.
+    $field_definitions_data = [];
+
+    // Process block content types.
+    foreach ($block_content_types as $block_content_type) {
+      // Get block type ID and label.
+      $block_type_id = $block_content_type->id();
+      $block_type_label = $block_content_type->label();
+
+      // Load field definitions for this block type.
+      $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions('block_content', $block_type_id);
+
+      // Add block content type field definitions to the data array.
+      $this->addFieldDefinitionsToData($field_definitions_data, 'block_content', $block_type_id, $block_type_label, $field_definitions);
+    }
+
+    // Process paragraph types.
+    foreach ($paragraph_types as $paragraph_type) {
+      // Get paragraph type ID and label.
+      $paragraph_type_id = $paragraph_type->id();
+      $paragraph_type_label = $paragraph_type->label();
+
+      // Load field definitions for this paragraph type.
+      $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions('paragraph', $paragraph_type_id);
+
+      // Add paragraph type field definitions to the data array.
+      $this->addFieldDefinitionsToData($field_definitions_data, 'paragraph', $paragraph_type_id, $paragraph_type_label, $field_definitions);
+    }
+
+    // Convert the data array to plain text.
+    $plain_text_data = "Entity Type, Type ID, Type Label, Field Name, Field Type, Required\n";
+    foreach ($field_definitions_data as $definition) {
+      $plain_text_data .= implode(", ", $definition) . "\n";
+    }
+
+    // Store the data in cache.
+    \Drupal::cache()->set('block_field_definitions_data', $plain_text_data, CacheBackendInterface::CACHE_PERMANENT);
+
+    // Return the plain text data.
+    return $plain_text_data;
+  }
+
+  /**
+   * Function to add field definitions to the data array.
+   *
+   * @param array $data
+   *   The data array to which field definitions will be added.
+   * @param string $entity_type
+   *   The entity type.
+   * @param string $type_id
+   *   The type ID.
+   * @param string $type_label
+   *   The type label.
+   * @param array $field_definitions
+   *   The field definitions to be added.
+   */
+  public function addFieldDefinitionsToData(&$data, $entity_type, $type_id, $type_label, $field_definitions) {
+    foreach ($field_definitions as $field_name => $field_definition) {
+      // Check if the field is custom, or if it is 'title' or 'body'.
+      if (
+        $field_definition->getName() !== 'id' && $field_definition->getName() !== 'uuid' &&
+        ($field_definition->getName() == 'title' || $field_definition->getName() == 'body' ||
+        strpos($field_definition->getName(), 'field_') === 0)
+      ) {
+        // Get field details.
+        $field_type = $field_definition->getType();
+        $is_required = $field_definition->isRequired() ? 'Yes' : 'No';
+
+        // Add the field definition to the data array.
+        $data[] = [
+          'entity_type' => $entity_type,
+          'type_id' => $type_id,
+          'type_label' => $type_label,
+          'field_name' => $field_name,
+          'field_type' => $field_type,
+          'is_required' => $is_required,
+        ];
+      }
+    }
   }
 
 }
