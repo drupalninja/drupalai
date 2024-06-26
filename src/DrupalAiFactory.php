@@ -45,7 +45,7 @@ class DrupalAiFactory {
 
       return new DrupalAiChatClaude3();
     }
-    elseif ($model == 'openai') {
+    elseif ($model == 'gpt-4o') {
       $api_key = $config->get('openai_api_key');
 
       if (!$api_key) {
