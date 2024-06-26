@@ -78,7 +78,7 @@ const DRUPALAI_BLOCK_PROMPT = <<<EOT
 
   CONFIG_INSTRUCTIONS
 
-  Before proceeding, ensure adherence to Drpal 10 coding standards and best practices.
+  Before proceeding, make sure that every field has a field storage configuration file.
 
   Important Guidelines:
 
@@ -94,6 +94,8 @@ const DRUPALAI_BLOCK_PROMPT = <<<EOT
 
   Remember to carefully following these instructions and guidelines:
   CONFIG_INSTRUCTIONS
+
+  Remember: make sure that every field has a field storage configuration file.
 
   Example Structure (for a block type, but you can have more than just these files in your response):
   <files>
