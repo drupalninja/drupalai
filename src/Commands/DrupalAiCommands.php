@@ -61,7 +61,7 @@ class DrupalAiCommands extends DrushCommands {
    * @var array
    */
   private $models = [
-    'openai' => 'ChatGPT-4o',
+    'gpt-4o' => 'ChatGPT-4o',
     'gpt-3.5-turbo-0125' => 'ChatGPT 3.5 Turbo',
     'gemini' => 'Gemini',
     'claude3' => 'Claude 3',
