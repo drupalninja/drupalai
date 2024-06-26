@@ -73,7 +73,8 @@ const DRUPALAI_BLOCK_PROMPT = <<<EOT
   DRUPAL_TYPES
 
   Create configuration files for every configuration file required to create the new block type.
-  Important: reuse existing fields and configuration where possible.
+  Important: reuse existing fields and configuration where possible. Make sure to create
+  new field storage configuration for any new fields.
 
   CONFIG_INSTRUCTIONS
 

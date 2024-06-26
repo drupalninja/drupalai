@@ -81,7 +81,7 @@ class DrupalAiCommands extends DrushCommands {
     $this->aiModel = DrupalAiFactory::build($model);
 
     // Prompt user for the new configuration.
-    $this->blockInstructions = $this->io()->ask('Describe the block type you would like to create', 'Create a Hero Overlay component that is full-width with text, link that overlays a media image');
+    $this->blockInstructions = $this->io()->ask('Describe the block type you would like to create', 'Create a new block type for a carousel of client testimonials');
 
     // Log to drush console that configuration is being created.
     $this->io()->write("Creating block configuration ...\n\n");
