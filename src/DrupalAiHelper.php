@@ -47,7 +47,7 @@ class DrupalAiHelper {
 
     $content = '';
 
-    // Function to recursively get content from all subdirectories.
+    // Function to recursively get content from all subdirectories, excluding .css files.
     $getFilesContent = function ($dir) use (&$getFilesContent, &$content) {
       $items = scandir($dir);
       $items = array_diff($items, ['.', '..']);
@@ -59,10 +59,13 @@ class DrupalAiHelper {
           $getFilesContent($path);
         }
         else {
-          // Get file content.
-          $content .= "Filename: $item\n";
-          $content .= "Content:\n";
-          $content .= file_get_contents($path) . "\n";
+          // Skip .css files.
+          if (substr($item, -4) !== '.css') {
+            // Get file content.
+            $content .= "Filename: $item\n";
+            $content .= "Content:\n";
+            $content .= file_get_contents($path) . "\n";
+          }
         }
       }
     };
