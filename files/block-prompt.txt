@@ -25,7 +25,7 @@ Paragraph types will typically have a paragraph.type.*.yml file and at least one
 Paragraph types will also have a core.entity_form_display.paragraph.*.default.yml and a core.entity_view_display.paragraph.*.default.yml file.
 Ensure proper syntax and closure of all XML tags. Do not add any extra indentation to the XML response.
 
-Remember to carefully following these instructions and guidelines:
+Remember to carefully follow these instructions and guidelines:
 CONFIG_INSTRUCTIONS
 
 Remember: make sure that every field has a field storage configuration file.
