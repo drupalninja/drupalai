@@ -35,12 +35,9 @@ Example Structure (for a block type, but you can have more than just these files
 <file>
 <filename>block_content.type.hero.yml</filename>
 <content>
-uuid: 9393410c-155f-4912-b842-d60667df90e7
 langcode: en
 status: true
 dependencies: {  }
-_core:
-  default_config_hash: AXvthsnSuD8ma1V0ShmQdZEWLp1UuRHZaeb5rmfB5Bo
 id: hero
 label: Hero
 revision: 0
@@ -50,7 +47,6 @@ description: 'The Hero Component is designed for promotional teasers that includ
 <file>
 <filename>field.field.block_content.hero.field_media.yml</filename>
 <content>
-uuid: 7f829ec8-6746-4fe2-889d-ea282f89d782
 langcode: en
 status: true
 dependencies:
@@ -58,8 +54,6 @@ dependencies:
     - block_content.type.hero
     - field.storage.block_content.field_media
     - media.type.image
-_core:
-  default_config_hash: jlAaeWGaRBAYu3Z7wuXgrgiO-wf4BC7c0bSyhW0RcUY
 id: block_content.hero.field_media
 field_name: field_media
 entity_type: block_content
@@ -86,7 +80,6 @@ field_type: entity_reference
 <file>
 <filename>core.entity_form_display.block_content.hero.default.yml</filename>
 <content>
-uuid: 637460bb-e7ad-473c-bd03-8810ea5268e6
 langcode: en
 status: true
 dependencies:
@@ -101,8 +94,6 @@ dependencies:
     - link
     - media_library
     - text
-_core:
-  default_config_hash: fx57jnCUYpRzC09NpxeSQh7D15J0i4KWQfGo8ftUj_w
 id: block_content.hero.default
 targetEntityType: block_content
 bundle: hero
@@ -159,7 +150,6 @@ hidden: {  }
 <file>
 <filename>core.entity_view_display.block_content.hero.default.yml</filename>
 <content>
-uuid: 0f56362b-7f1c-4a61-a473-89f8e7b6da03
 langcode: en
 status: true
 dependencies:
@@ -174,8 +164,6 @@ dependencies:
     - link
     - options
     - text
-_core:
-  default_config_hash: aWeSZbznfjPSQWyGP0dA9l8zFvXHAPgBGHAWKrCdcVk
 id: block_content.hero.default
 targetEntityType: block_content
 bundle: hero
@@ -231,8 +219,6 @@ hidden:
 <file>
 <filename>auto_entitylabel.settings.block_content.hero.yml</filename>
 <content>
-  _core:
-  default_config_hash: IPbHC9Ayh-Sfl3OOEbQkKiiMg10oCyxrVBoH26H1X9U
 status: 2
 pattern: 'Hero: [block_content:field_title]'
 escape: false
