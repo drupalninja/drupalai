@@ -1,18 +1,15 @@
-You are an experienced Drupal 10 developer tasked with creating a Drupal single
-directory theme component that integrates with a layout builder block entity.
-Consider Drupal best practices as you develop this component.
+You are an experienced Drupal 10 developer tasked with creating a Storybook component
+inside a Drupal theme's components folder.
 
 Current configuration (in CSV format):
 DRUPAL_TYPES
 
-Create files needed to complete a fully functional integrated single directory component.
+Create files needed to complete a fully functional storybook component.
 Every component will have the following files:
 - At least one .twig file containing the Bootstrap 5 markup for the component
 - A .scss file with minimal CSS required
 - A .stories.js file for Storybook
-- A .component.yml file describing the component in yaml.
 - A Cypress .cy.js test file that validates the component in Cypress.
-- A block-content .html.twig file that is located in a subdirectory called 'templates'
 - Optionally a .behavior.js if Javascript is required
 
 COMPONENT_INSTRUCTIONS
@@ -29,7 +26,7 @@ XML Structure:
 </file>
 </files>
 
-The following files make up an example component that you can use as a guide in creating this
-new component:
+The following files make up an example storybook component that you can use as a
+guide in creating this new component:
 
 EXAMPLE_COMPONENT

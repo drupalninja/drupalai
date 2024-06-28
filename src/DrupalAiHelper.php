@@ -31,12 +31,12 @@ class DrupalAiHelper {
   }
 
   /**
-   * Get Component Content.
+   * Get Story Content.
    *
    * @return string
-   *   The component content.
+   *   The story component content.
    */
-  public static function getComponentContent(): string {
+  public static function getStoryContent(): string {
     // Get the active theme path.
     $themePath = \Drupal::theme()->getActiveTheme()->getPath();
     $componentDir = $themePath . '/components';
@@ -45,34 +45,40 @@ class DrupalAiHelper {
       return '';
     }
 
+    // Get the first subfolder in /components/.
+    $subfolders = scandir($componentDir);
+    $subfolders = array_diff($subfolders, ['.', '..']);
+    $firstSubfolder = '';
+
+    foreach ($subfolders as $subfolder) {
+      if (is_dir($componentDir . '/' . $subfolder)) {
+        $firstSubfolder = $componentDir . '/' . $subfolder;
+        break;
+      }
+    }
+
+    if ($firstSubfolder === '') {
+      return '';
+    }
+
     $content = '';
 
-    // Function to recursively get content from all subdirectories, excluding .css files.
-    $getFilesContent = function ($dir) use (&$getFilesContent, &$content) {
-      $items = scandir($dir);
-      $items = array_diff($items, ['.', '..']);
+    // Get content from the first subfolder, only including specified file types.
+    $items = scandir($firstSubfolder);
+    $items = array_diff($items, ['.', '..']);
 
-      foreach ($items as $item) {
-        $path = $dir . '/' . $item;
-        if (is_dir($path)) {
-          // Recur into subdirectory.
-          $getFilesContent($path);
-        }
-        else {
-          // Skip .css files.
-          if (substr($item, -4) !== '.css') {
-            // Get file content.
-            $content .= "Filename: $item\n";
-            $content .= "Content:\n";
-            $content .= file_get_contents($path) . "\n";
-          }
+    foreach ($items as $item) {
+      $path = $firstSubfolder . '/' . $item;
+      if (!is_dir($path)) {
+        // Only include *.twig, *.cy.js, *.scss, and *.stories.js files.
+        if (preg_match('/\.(twig|cy\.js|scss|stories\.js)$/', $item)) {
+          // Get file content.
+          $content .= "Filename: $item\n";
+          $content .= "Content:\n";
+          $content .= file_get_contents($path) . "\n";
         }
       }
-    };
-
-    // Start the recursion from the first component directory.
-    $firstComponentDir = $componentDir . '/' . scandir($componentDir)[2];
-    $getFilesContent($firstComponentDir);
+    }
 
     return $content;
   }

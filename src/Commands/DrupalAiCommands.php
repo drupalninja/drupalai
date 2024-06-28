@@ -49,18 +49,18 @@ class DrupalAiCommands extends DrushCommands {
   private $refactorContent = '';
 
   /**
-   * Component instructions.
+   * Story instructions.
    *
    * @var string
    */
-  private $componentInstructions = '';
+  private $storyInstructions = '';
 
   /**
-   * Component name.
+   * Story name.
    *
    * @var string
    */
-  private $componentName = '';
+  private $storyName = '';
 
   /**
    * AI model.
@@ -83,45 +83,45 @@ class DrupalAiCommands extends DrushCommands {
   ];
 
   /**
-   * Generate Component configuration using AI.
+   * Generate Storybook component using AI.
    *
-   * @command drupalai:createComponent
-   * @aliases ai-create-component
+   * @command drupalai:createStory
+   * @aliases ai-create-story
    */
-  public function createComponent() {
+  public function createStory() {
     $model = $this->io()->choice('Select the model type', $this->models, 0);
 
     // Build AI model.
     $this->aiModel = DrupalAiFactory::build($model);
 
-    // Prompt user for the new configuration.
-    $this->componentInstructions = $this->io()->ask('Describe the component you would like to create', 'Create a new component for a carousel of client testimonials');
+    // Prompt user for the new story.
+    $this->storyInstructions = $this->io()->ask('Describe the Storybook component you would like to create', 'Create a new component for a carousel of client testimonials');
 
-    // Prompt user for the component machine name.
-    $this->componentName = $this->io()->ask('Enter the machine name of the component', 'testimonial-carousel');
+    // Prompt user for the story machine name.
+    $this->storyName = $this->io()->ask('Enter the machine name of the Storybook component', 'testimonial-carousel');
 
-    // Log to drush console that configuration is being created.
-    $this->io()->write("Creating component: {$this->componentName} ...\n\n");
+    // Log to drush console that the component is being created.
+    $this->io()->write("Creating Storybook component: {$this->storyName} ...\n\n");
 
-    // Create component files using AI.
-    $this->generateComponentFilesFromAi();
+    // Create storybook component files using AI.
+    $this->generateStoryFilesFromAi();
   }
 
   /**
-   * Generate Component Files using AI.
+   * Generate Story Files using AI.
    */
-  public function generateComponentFilesFromAi() {
+  public function generateStoryFilesFromAi() {
     // Pass in Drupal configuration types for context.
     $drupal_config_types = DrupalAiHelper::getBlockFieldDefinitions();
 
-    // Get the content of the example component (if components dir exists).
-    $example_component_content = DrupalAiHelper::getComponentContent();
+    // Get the content of the example story (if components dir exists).
+    $example_story_content = DrupalAiHelper::getStoryContent();
 
-    $prompt = str_replace('DRUPAL_TYPES', $drupal_config_types, drupalai_get_prompt('component'));
-    $prompt = str_replace('COMPONENT_INSTRUCTIONS', $this->componentInstructions, $prompt);
+    $prompt = str_replace('DRUPAL_TYPES', $drupal_config_types, drupalai_get_prompt('story'));
+    $prompt = str_replace('COMPONENT_INSTRUCTIONS', $this->storyInstructions, $prompt);
 
-    if (!empty($example_component_content)) {
-      $prompt = str_replace('EXAMPLE_COMPONENT', $example_component_content, $prompt);
+    if (!empty($example_story_content)) {
+      $prompt = str_replace('EXAMPLE_COMPONENT', $example_story_content, $prompt);
     }
 
     $contents = $this->aiModel->getChat($prompt);
@@ -136,15 +136,8 @@ class DrupalAiCommands extends DrushCommands {
         $filename = (string) $file->filename;
         $content = (string) $file->content;
 
-        // Check if the filename includes *.html.twig.
-        if (strpos($filename, '.html.twig') !== FALSE) {
-          // Create component file and any subdirectories in the "templates" subfolder.
-          $file_path = DrupalAiHelper::createFileWithPath($themePath . '/components/' . $this->componentName . '/templates/' . trim($filename));
-        }
-        else {
-          // Create component file and any subdirectories in the main directory.
-          $file_path = DrupalAiHelper::createFileWithPath($themePath . '/components/' . $this->componentName . '/' . trim($filename));
-        }
+        // Create component file and any subdirectories in the main directory.
+        $file_path = DrupalAiHelper::createFileWithPath($themePath . '/components/' . $this->storyName . '/' . trim($filename));
 
         // Create component file.
         $this->io()->write("- Creating file: {$filename} ...\n");

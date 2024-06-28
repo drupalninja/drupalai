@@ -26,8 +26,8 @@ function drupalai_get_prompt($type) {
       $filename = 'block-prompt.txt';
       break;
 
-    case 'component':
-      $filename = 'component-prompt.txt';
+    case 'story':
+      $filename = 'story-prompt.txt';
       break;
   }
 
