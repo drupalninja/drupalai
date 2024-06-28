@@ -76,7 +76,7 @@ class DrupalAiSettingsForm extends ConfigFormBase {
         The keywords \'MODULE_NAME\' and \'MODULE_INSTRUCTIONS\' are needed as well
         as the XML format: <files><file><filename></filename><content></content></file></files>.'),
       '#required' => TRUE,
-      '#default_value' => $config->get('module_prompt_template') ?? DRUPALAI_MODULE_PROMPT,
+      '#default_value' => $config->get('module_prompt_template') ?? drupalai_get_prompt('module'),
       '#rows' => 15,
     ];
 
@@ -87,7 +87,7 @@ class DrupalAiSettingsForm extends ConfigFormBase {
         The keyword \'REFACTOR_INSTRUCTIONS\' are needed as well
         as the XML format: <files><file><filename></filename><content></content></file></files>.'),
       '#required' => TRUE,
-      '#default_value' => $config->get('refactor_prompt_template') ?? DRUPALAI_REFACTOR_PROMPT,
+      '#default_value' => $config->get('refactor_prompt_template') ?? drupalai_get_prompt('refactor'),
       '#rows' => 15,
     ];
 
@@ -98,7 +98,7 @@ class DrupalAiSettingsForm extends ConfigFormBase {
         The keywords \'BLOCK_NAME\' and \'BLOCK_INSTRUCTIONS\' are needed as well
         as the XML format: <files><file><filename></filename><content></content></file></files>.'),
       '#required' => TRUE,
-      '#default_value' => $config->get('block_prompt_template') ?? DRUPALAI_BLOCK_PROMPT,
+      '#default_value' => $config->get('block_prompt_template') ?? drupalai_get_prompt('block'),
       '#rows' => 15,
     ];
 

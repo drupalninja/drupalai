@@ -2,11 +2,11 @@
 
 namespace Drupal\drupalai\Commands;
 
-use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Site\Settings;
 use Drush\Commands\DrushCommands;
 use Drupal\drupalai\DrupalAiChatInterface;
 use Drupal\drupalai\DrupalAiFactory;
+use Drupal\drupalai\DrupalAiHelper;
 
 /**
  * A Drush commandfile.
@@ -95,9 +95,9 @@ class DrupalAiCommands extends DrushCommands {
    */
   public function generateBlockFilesFromAi() {
     // Pass in Drupal configuration types for context.
-    $drupal_config_types = $this->getBlockFieldDefinitions();
+    $drupal_config_types = DrupalAiHelper::getBlockFieldDefinitions();
 
-    $prompt = str_replace('DRUPAL_TYPES', $drupal_config_types, DRUPALAI_BLOCK_PROMPT);
+    $prompt = str_replace('DRUPAL_TYPES', $drupal_config_types, drupalai_get_prompt('block'));
     $prompt = str_replace('CONFIG_INSTRUCTIONS', $this->blockInstructions, $prompt);
 
     $contents = $this->aiModel->getChat($prompt);
@@ -177,7 +177,7 @@ class DrupalAiCommands extends DrushCommands {
     // Prompt user for search string.
     $search_text = $this->io()->ask('Enter search string to find files you would like to change', '^block_content.type');
 
-    $results = $this->searchFiles($search_text);
+    $results = DrupalAiHelper::searchFiles($search_text);
 
     // Show files to the user and prompt to continue.
     $this->io()->write("Files found:\n");
@@ -210,7 +210,7 @@ class DrupalAiCommands extends DrushCommands {
   public function refactorFilesFromAi() {
     $config = \Drupal::config('drupalai.settings');
 
-    $prompt = str_replace('REFACTOR_INSTRUCTIONS', $this->refactorInstructions, $config->get('refactor_prompt_template') ?? DRUPALAI_REFACTOR_PROMPT);
+    $prompt = str_replace('REFACTOR_INSTRUCTIONS', $this->refactorInstructions, $config->get('refactor_prompt_template') ?? drupalai_get_prompt('refactor'));
     $prompt = str_replace('REFACTOR_FILES', $this->refactorContent, $prompt);
 
     $contents = $this->aiModel->getChat($prompt);
@@ -256,7 +256,7 @@ class DrupalAiCommands extends DrushCommands {
   public function generateModuleFilesFromAi(): bool {
     $config = \Drupal::config('drupalai.settings');
 
-    $prompt = str_replace('MODULE_NAME', $this->moduleName, $config->get('module_prompt_template') ?? DRUPALAI_MODULE_PROMPT);
+    $prompt = str_replace('MODULE_NAME', $this->moduleName, $config->get('module_prompt_template') ?? drupalai_get_prompt('module'));
     $prompt = str_replace('MODULE_INSTRUCTIONS', $this->moduleInstructions, $prompt);
 
     $contents = $this->aiModel->getChat($prompt);
@@ -288,7 +288,7 @@ class DrupalAiCommands extends DrushCommands {
         // Log to drush console that a file is being generated.
         $this->io()->write("- Creating file and subdirectories: {$path}\n");
 
-        $file_path = self::createFileWithPath($path);
+        $file_path = DrupalAiHelper::createFileWithPath($path);
 
         // Log to drush console that a file is being populated.
         $this->io()->write("- Populating file: {$file_path}\n");
@@ -302,191 +302,6 @@ class DrupalAiCommands extends DrushCommands {
       return FALSE;
     }
     return TRUE;
-  }
-
-  /**
-   * Create File With Path.
-   *
-   * @param string $file_path
-   *   The file path.
-   *
-   * @return string
-   *   The file path.
-   */
-  public static function createFileWithPath($file_path): string {
-    // Extract directory path and file name.
-    $directory = dirname($file_path);
-
-    // Create directories recursively if they don't exist.
-    if (!is_dir($directory)) {
-      mkdir($directory, 0777, TRUE);
-    }
-
-    // Create the file if it doesn't exist.
-    if (!file_exists($file_path)) {
-      fopen($file_path, 'w');
-    }
-
-    return $file_path;
-  }
-
-  /**
-   * Search Files.
-   *
-   * @param string $search_text
-   *   The search text.
-   *
-   * @return array
-   *   The search results.
-   */
-  public function searchFiles($search_text) {
-    $results = [];
-
-    // Locate the Drupal configuration directory.
-    $config_path = Settings::get('config_sync_directory');
-
-    $file_system = \Drupal::service('file_system');
-
-    // Build a regular expression for case-insensitive search.
-    $pattern = "/.*{$search_text}.*/i";
-
-    $search_results = $file_system->scanDirectory($config_path, $pattern);
-
-    if ($search_results) {
-      foreach ($search_results as $item) {
-        $results[] = $item->filename;
-      }
-    }
-
-    $files = scandir($config_path);
-
-    foreach ($files as $file) {
-      // Skip . and .. directories.
-      if ($file == '.' || $file == '..') {
-        continue;
-      }
-
-      // Get the file contents.
-      $contents = file_get_contents($config_path . '/' . $file);
-
-      // Search for the text in the file contents.
-      if (stripos($contents, $search_text) !== FALSE) {
-        $results[] = $file;
-      }
-    }
-
-    return array_unique($results);
-  }
-
-  /**
-   * Method to get field definitions of block content types and paragraph types.
-   *
-   * @return string
-   *   The field definitions in plain text format.
-   */
-  public function getBlockFieldDefinitions() {
-    // Check if the field definitions data is in the cache.
-    $cache = \Drupal::cache()->get('block_field_definitions_data');
-
-    if ($cache) {
-      // Return the cached data if available.
-      return $cache->data;
-    }
-
-    // Load the entity type manager service.
-    $entity_type_manager = \Drupal::entityTypeManager();
-
-    // Get all custom block content types.
-    $block_content_type_storage = $entity_type_manager->getStorage('block_content_type');
-
-    // Load all custom block content types.
-    $block_content_types = $block_content_type_storage->loadMultiple();
-
-    // Get all paragraph types.
-    $paragraph_type_storage = $entity_type_manager->getStorage('paragraphs_type');
-
-    // Load all paragraph types.
-    $paragraph_types = $paragraph_type_storage->loadMultiple();
-
-    // Initialize an array to store field definitions.
-    $field_definitions_data = [];
-
-    // Process block content types.
-    foreach ($block_content_types as $block_content_type) {
-      // Get block type ID and label.
-      $block_type_id = $block_content_type->id();
-      $block_type_label = $block_content_type->label();
-
-      // Load field definitions for this block type.
-      $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions('block_content', $block_type_id);
-
-      // Add block content type field definitions to the data array.
-      $this->addFieldDefinitionsToData($field_definitions_data, 'block_content', $block_type_id, $block_type_label, $field_definitions);
-    }
-
-    // Process paragraph types.
-    foreach ($paragraph_types as $paragraph_type) {
-      // Get paragraph type ID and label.
-      $paragraph_type_id = $paragraph_type->id();
-      $paragraph_type_label = $paragraph_type->label();
-
-      // Load field definitions for this paragraph type.
-      $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions('paragraph', $paragraph_type_id);
-
-      // Add paragraph type field definitions to the data array.
-      $this->addFieldDefinitionsToData($field_definitions_data, 'paragraph', $paragraph_type_id, $paragraph_type_label, $field_definitions);
-    }
-
-    // Convert the data array to plain text.
-    $plain_text_data = "Entity Type, Type ID, Type Label, Field Name, Field Type, Required\n";
-    foreach ($field_definitions_data as $definition) {
-      $plain_text_data .= implode(", ", $definition) . "\n";
-    }
-
-    // Store the data in cache.
-    \Drupal::cache()->set('block_field_definitions_data', $plain_text_data, CacheBackendInterface::CACHE_PERMANENT);
-
-    // Return the plain text data.
-    return $plain_text_data;
-  }
-
-  /**
-   * Function to add field definitions to the data array.
-   *
-   * @param array $data
-   *   The data array to which field definitions will be added.
-   * @param string $entity_type
-   *   The entity type.
-   * @param string $type_id
-   *   The type ID.
-   * @param string $type_label
-   *   The type label.
-   * @param array $field_definitions
-   *   The field definitions to be added.
-   */
-  public function addFieldDefinitionsToData(&$data, $entity_type, $type_id, $type_label, $field_definitions) {
-    foreach ($field_definitions as $field_name => $field_definition) {
-      // Check if the field is custom, or if it is 'title' or 'body'.
-      if (
-        $field_definition->getName() !== 'id' && $field_definition->getName() !== 'uuid' &&
-        ($field_definition->getName() == 'title' || $field_definition->getName() == 'body' ||
-        strpos($field_definition->getName(), 'field_') === 0)
-      ) {
-        // Get field details.
-        $field_type = $field_definition->getType();
-        $is_required = $field_definition->isRequired() ? 'Yes' : 'No';
-
-        // Add the field definition to the data array.
-        $data[] = [
-          'entity_type' => $entity_type,
-          'type_id' => $type_id,
-          'type_label' => $type_label,
-          'field_name' => $field_name,
-          'field_type' => $field_type,
-          'is_required' => $is_required,
-        ];
-      }
-    }
   }
 
 }
