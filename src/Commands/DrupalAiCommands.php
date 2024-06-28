@@ -97,7 +97,7 @@ class DrupalAiCommands extends DrushCommands {
     // Pass in Drupal configuration types for context.
     $drupal_config_types = $this->getBlockFieldDefinitions();
 
-    $prompt = str_replace('DRUPAL_TYPES', $drupal_config_types, DRUPALAI_BLOCK_PROMPT);
+    $prompt = str_replace('DRUPAL_TYPES', $drupal_config_types, drupalai_get_prompt('block'));
     $prompt = str_replace('CONFIG_INSTRUCTIONS', $this->blockInstructions, $prompt);
 
     $contents = $this->aiModel->getChat($prompt);
@@ -210,7 +210,7 @@ class DrupalAiCommands extends DrushCommands {
   public function refactorFilesFromAi() {
     $config = \Drupal::config('drupalai.settings');
 
-    $prompt = str_replace('REFACTOR_INSTRUCTIONS', $this->refactorInstructions, $config->get('refactor_prompt_template') ?? DRUPALAI_REFACTOR_PROMPT);
+    $prompt = str_replace('REFACTOR_INSTRUCTIONS', $this->refactorInstructions, $config->get('refactor_prompt_template') ?? drupalai_get_prompt('refactor'));
     $prompt = str_replace('REFACTOR_FILES', $this->refactorContent, $prompt);
 
     $contents = $this->aiModel->getChat($prompt);
@@ -256,7 +256,7 @@ class DrupalAiCommands extends DrushCommands {
   public function generateModuleFilesFromAi(): bool {
     $config = \Drupal::config('drupalai.settings');
 
-    $prompt = str_replace('MODULE_NAME', $this->moduleName, $config->get('module_prompt_template') ?? DRUPALAI_MODULE_PROMPT);
+    $prompt = str_replace('MODULE_NAME', $this->moduleName, $config->get('module_prompt_template') ?? drupalai_get_prompt('module'));
     $prompt = str_replace('MODULE_INSTRUCTIONS', $this->moduleInstructions, $prompt);
 
     $contents = $this->aiModel->getChat($prompt);
