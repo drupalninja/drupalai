@@ -70,8 +70,8 @@ class DrupalAiHelper {
     foreach ($items as $item) {
       $path = $firstSubfolder . '/' . $item;
       if (!is_dir($path)) {
-        // Only include *.twig, *.cy.js, *.scss, and *.stories.js files.
-        if (preg_match('/\.(twig|cy\.js|scss|stories\.js)$/', $item)) {
+        // Only include *.twig, *.scss, and *.stories.js files.
+        if (preg_match('/\.(twig|scss|stories\.js)$/', $item)) {
           // Get file content.
           $content .= "Filename: $item\n";
           $content .= "Content:\n";

@@ -9,7 +9,6 @@ Every component will have the following files:
 - At least one .twig file containing the Bootstrap 5 markup for the component
 - A .scss file with minimal CSS required
 - A .stories.js file for Storybook
-- A Cypress .cy.js test file that validates the component in Cypress.
 - Optionally a .behavior.js if Javascript is required
 
 COMPONENT_INSTRUCTIONS
@@ -17,12 +16,15 @@ COMPONENT_INSTRUCTIONS
 Important Guidelines:
 
 Your task is to provide a response in XML format, adhering to the structure provided below.
+Ensure proper syntax and closure of all XML tags. Do not add any extra indentation to the XML response.
 
 XML Structure:
 <files>
 <file>
-<filename></filename>
-<content></content>
+<filename>accordion.twig</filename>
+<content>
+<![CDATA[ ]]>
+</content>
 </file>
 </files>
 

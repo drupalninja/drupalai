@@ -143,7 +143,7 @@ class DrupalAiCommands extends DrushCommands {
         $this->io()->write("- Creating file: {$filename} ...\n");
 
         // Add file contents.
-        file_put_contents($file_path, trim($content));
+        file_put_contents($file_path, trim($content) . "\n");
       }
     }
     else {
