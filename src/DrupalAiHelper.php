@@ -10,6 +10,71 @@ use Drupal\Core\Cache\CacheBackendInterface;
 class DrupalAiHelper {
 
   /**
+   * Get Component Folders.
+   *
+   * @return array
+   *   An array of component folders.
+   */
+  public static function getComponentFolders(): array {
+    // Get the active theme path.
+    $themePath = \Drupal::theme()->getActiveTheme()->getPath();
+    $componentsDir = $themePath . '/components';
+
+    if (!is_dir($componentsDir)) {
+      return [];
+    }
+
+    $folders = scandir($componentsDir);
+    $folders = array_diff($folders, ['.', '..']);
+
+    return $folders;
+  }
+
+  /**
+   * Get Component Content.
+   *
+   * @return string
+   *   The component content.
+   */
+  public static function getComponentContent(): string {
+    // Get the active theme path.
+    $themePath = \Drupal::theme()->getActiveTheme()->getPath();
+    $componentDir = $themePath . '/components';
+
+    if (!is_dir($componentDir)) {
+      return '';
+    }
+
+    $content = '';
+
+    // Function to recursively get content from all subdirectories.
+    $getFilesContent = function ($dir) use (&$getFilesContent, &$content) {
+      $items = scandir($dir);
+      $items = array_diff($items, ['.', '..']);
+
+      foreach ($items as $item) {
+        $path = $dir . '/' . $item;
+        if (is_dir($path)) {
+          // Recur into subdirectory.
+          $getFilesContent($path);
+        }
+        else {
+          // Get file content.
+          $content .= "Filename: $item\n";
+          $content .= "Content:\n";
+          $content .= file_get_contents($path) . "\n";
+        }
+      }
+    };
+
+    // Start the recursion from the first component directory.
+    $firstComponentDir = $componentDir . '/' . scandir($componentDir)[2];
+    $getFilesContent($firstComponentDir);
+
+    return $content;
+  }
+
+  /**
    * Create File With Path.
    *
    * @param string $file_path

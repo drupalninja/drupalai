@@ -49,6 +49,20 @@ class DrupalAiCommands extends DrushCommands {
   private $refactorContent = '';
 
   /**
+   * Component instructions.
+   *
+   * @var string
+   */
+  private $componentInstructions = '';
+
+  /**
+   * Component name.
+   *
+   * @var string
+   */
+  private $componentName = '';
+
+  /**
    * AI model.
    *
    * @var \Drupal\drupalai\DrupalAiChat
@@ -67,6 +81,70 @@ class DrupalAiCommands extends DrushCommands {
     'claude3' => 'Claude 3',
     'llama3' => 'Llama 3 (ollama)',
   ];
+
+  /**
+   * Generate Component configuration using AI.
+   *
+   * @command drupalai:createComponent
+   * @aliases ai-create-component
+   */
+  public function createComponent() {
+    $model = $this->io()->choice('Select the model type', $this->models, 0);
+
+    // Build AI model.
+    $this->aiModel = DrupalAiFactory::build($model);
+
+    // Prompt user for the new configuration.
+    $this->componentInstructions = $this->io()->ask('Describe the component you would like to create', 'Create a new component for a carousel of client testimonials');
+
+    // Prompt user for the component machine name.
+    $this->componentName = $this->io()->ask('Enter the machine name of the component', 'testimonial_carousel');
+
+    // Log to drush console that configuration is being created.
+    $this->io()->write("Creating component configuration ...\n\n");
+
+    // Get a list of folders in the components directory from the active theme.
+    $folders = DrupalAiHelper::getComponentFolders();
+
+    // Create component files using AI.
+    $this->generateComponentFilesFromAi();
+  }
+
+  /**
+   * Generate Component Files using AI.
+   */
+  public function generateComponentFilesFromAi() {
+    // Pass in Drupal configuration types for context.
+    $drupal_config_types = DrupalAiHelper::getComponentFolders();
+
+    // Get the content of the example component (if components dir exists).
+    $example_component_content = DrupalAiHelper::getComponentContent();
+
+    $prompt = str_replace('DRUPAL_TYPES', $drupal_config_types, drupalai_get_prompt('component'));
+    $prompt = str_replace('COMPONENT_INSTRUCTIONS', $this->componentInstructions, $prompt);
+    $prompt = str_replace('EXAMPLE_COMPONENT', $example_component_content, $prompt);
+
+    $contents = $this->aiModel->getChat($prompt);
+
+    $xml = @simplexml_load_string($contents);
+
+    if (!empty($xml)) {
+      foreach ($xml->file as $file) {
+        $filename = (string) $file->filename;
+        $content = (string) $file->content;
+
+        // Path to the components directory in the active theme.
+        $themePath = \Drupal::theme()->getActiveTheme()->getPath();
+        $componentDir = $themePath . '/components/' . $this->componentName . '/' . trim($filename);
+
+        // Create component file.
+        $this->io()->write("- Creating file: {$filename} ...\n");
+
+        // Add file contents.
+        file_put_contents($componentDir, trim($content));
+      }
+    }
+  }
 
   /**
    * Generate Block configuration using AI.
