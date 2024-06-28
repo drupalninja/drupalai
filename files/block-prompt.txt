@@ -1,6 +1,6 @@
 You are an experienced Drupal 10 developer tasked with creating the Drupal configuration
 for a new block type as well as paragraph types when applicable.
-Consider Drupal best practices as you develop this test suite.
+Consider Drupal best practices as you develop this configuration.
 
 Current configuration (in CSV format):
 DRUPAL_TYPES
