@@ -98,13 +98,10 @@ class DrupalAiCommands extends DrushCommands {
     $this->componentInstructions = $this->io()->ask('Describe the component you would like to create', 'Create a new component for a carousel of client testimonials');
 
     // Prompt user for the component machine name.
-    $this->componentName = $this->io()->ask('Enter the machine name of the component', 'testimonial_carousel');
+    $this->componentName = $this->io()->ask('Enter the machine name of the component', 'testimonial-carousel');
 
     // Log to drush console that configuration is being created.
-    $this->io()->write("Creating component configuration ...\n\n");
-
-    // Get a list of folders in the components directory from the active theme.
-    $folders = DrupalAiHelper::getComponentFolders();
+    $this->io()->write("Creating component: {$this->componentName} ...\n\n");
 
     // Create component files using AI.
     $this->generateComponentFilesFromAi();
@@ -115,34 +112,49 @@ class DrupalAiCommands extends DrushCommands {
    */
   public function generateComponentFilesFromAi() {
     // Pass in Drupal configuration types for context.
-    $drupal_config_types = DrupalAiHelper::getComponentFolders();
+    $drupal_config_types = DrupalAiHelper::getBlockFieldDefinitions();
 
     // Get the content of the example component (if components dir exists).
     $example_component_content = DrupalAiHelper::getComponentContent();
 
     $prompt = str_replace('DRUPAL_TYPES', $drupal_config_types, drupalai_get_prompt('component'));
     $prompt = str_replace('COMPONENT_INSTRUCTIONS', $this->componentInstructions, $prompt);
-    $prompt = str_replace('EXAMPLE_COMPONENT', $example_component_content, $prompt);
+
+    if (!empty($example_component_content)) {
+      $prompt = str_replace('EXAMPLE_COMPONENT', $example_component_content, $prompt);
+    }
 
     $contents = $this->aiModel->getChat($prompt);
 
     $xml = @simplexml_load_string($contents);
 
     if (!empty($xml)) {
+      // Path to the components directory in the active theme.
+      $themePath = \Drupal::theme()->getActiveTheme()->getPath();
+
       foreach ($xml->file as $file) {
         $filename = (string) $file->filename;
         $content = (string) $file->content;
 
-        // Path to the components directory in the active theme.
-        $themePath = \Drupal::theme()->getActiveTheme()->getPath();
-        $componentDir = $themePath . '/components/' . $this->componentName . '/' . trim($filename);
+        // Check if the filename includes *.html.twig.
+        if (strpos($filename, '.html.twig') !== FALSE) {
+          // Create component file and any subdirectories in the "templates" subfolder.
+          $file_path = DrupalAiHelper::createFileWithPath($themePath . '/components/' . $this->componentName . '/templates/' . trim($filename));
+        }
+        else {
+          // Create component file and any subdirectories in the main directory.
+          $file_path = DrupalAiHelper::createFileWithPath($themePath . '/components/' . $this->componentName . '/' . trim($filename));
+        }
 
         // Create component file.
         $this->io()->write("- Creating file: {$filename} ...\n");
 
         // Add file contents.
-        file_put_contents($componentDir, trim($content));
+        file_put_contents($file_path, trim($content));
       }
+    }
+    else {
+      $this->io()->write("No files generated.\n");
     }
   }
 
@@ -195,6 +207,9 @@ class DrupalAiCommands extends DrushCommands {
         // Update file contents.
         file_put_contents($path, trim($content));
       }
+    }
+    else {
+      $this->io()->write("No files generated.\n");
     }
   }
 
@@ -325,6 +340,9 @@ class DrupalAiCommands extends DrushCommands {
           rename($path, $new_path);
         }
       }
+    }
+    else {
+      $this->io()->write("No files refactored.\n");
     }
   }
 
