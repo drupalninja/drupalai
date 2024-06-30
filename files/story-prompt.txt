@@ -4,12 +4,14 @@ inside a Drupal theme's components folder.
 Current configuration (in CSV format):
 DRUPAL_TYPES
 
-Create files needed to complete a fully functional storybook component.
+Create files needed to complete a fully functional storybook component with the
+name: STORY_NAME.
 Every component will have the following files:
 - At least one .twig file containing the Bootstrap 5 markup for the component
 - A .scss file with minimal CSS required
-- A .stories.js file for Storybook
+- A .stories.js file for Storybook with the title indicating the component is in the 'Editorial' category
 - Optionally a .behavior.js if Javascript is required
+- All files should start with the name STORY_NAME
 
 COMPONENT_INSTRUCTIONS
 

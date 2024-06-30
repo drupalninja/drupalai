@@ -95,10 +95,10 @@ class DrupalAiCommands extends DrushCommands {
     $this->aiModel = DrupalAiFactory::build($model);
 
     // Prompt user for the new story.
-    $this->storyInstructions = $this->io()->ask('Describe the Storybook component you would like to create', 'Create a new component for a carousel of client testimonials');
+    $this->storyInstructions = $this->io()->ask('Describe the Storybook component you would like to create', 'Row of 3 testimonial cards (equal height) with name, image, title, and quote');
 
-    // Prompt user for the story machine name.
-    $this->storyName = $this->io()->ask('Enter the machine name of the Storybook component', 'testimonial-carousel');
+    // Prompt user for the name of the Storybook component.
+    $this->storyName = $this->io()->ask('Enter the name of the Storybook component', 'testimonial-cards');
 
     // Log to drush console that the component is being created.
     $this->io()->write("Creating Storybook component: {$this->storyName} ...\n\n");
@@ -119,6 +119,7 @@ class DrupalAiCommands extends DrushCommands {
 
     $prompt = str_replace('DRUPAL_TYPES', $drupal_config_types, drupalai_get_prompt('story'));
     $prompt = str_replace('COMPONENT_INSTRUCTIONS', $this->storyInstructions, $prompt);
+    $prompt = str_replace('STORY_NAME', $this->storyName, $prompt);
 
     if (!empty($example_story_content)) {
       $prompt = str_replace('EXAMPLE_COMPONENT', $example_story_content, $prompt);
@@ -131,13 +132,14 @@ class DrupalAiCommands extends DrushCommands {
     if (!empty($xml)) {
       // Path to the components directory in the active theme.
       $themePath = \Drupal::theme()->getActiveTheme()->getPath();
+      $directory = $this->storyName;
 
       foreach ($xml->file as $file) {
         $filename = (string) $file->filename;
         $content = (string) $file->content;
 
         // Create component file and any subdirectories in the main directory.
-        $file_path = DrupalAiHelper::createFileWithPath($themePath . '/components/' . $this->storyName . '/' . trim($filename));
+        $file_path = DrupalAiHelper::createFileWithPath($themePath . '/components/' . $directory . '/' . trim($filename));
 
         // Create component file.
         $this->io()->write("- Creating file: {$filename} ...\n");
