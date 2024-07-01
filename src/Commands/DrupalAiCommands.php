@@ -95,7 +95,7 @@ class DrupalAiCommands extends DrushCommands {
     $this->aiModel = DrupalAiFactory::build($model);
 
     // Prompt user for the new story.
-    $this->storyInstructions = $this->io()->ask('Describe the Storybook component you would like to create', 'Row of 3 testimonial cards (equal height) with name, image, title, and quote');
+    $this->storyInstructions = $this->io()->ask('Describe the Storybook component you would like to create', 'Row of 3 testimonial cards (equal height, centered) with name, image, title, and quote');
 
     // Prompt user for the name of the Storybook component.
     $this->storyName = $this->io()->ask('Enter the name of the Storybook component', 'testimonial-cards');

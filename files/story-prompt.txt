@@ -9,7 +9,7 @@ name: STORY_NAME.
 Every component will have the following files:
 - At least one .twig file containing the Bootstrap 5 markup for the component
 - A .scss file with minimal CSS required
-- A .stories.js file for Storybook with the title indicating the component is in the 'Editorial' category
+- A .stories.js file for Storybook with the title indicating the component is in the 'Editorial' category. Any images used should use placeholder images.
 - Optionally a .behavior.js if Javascript is required
 - All files should start with the name STORY_NAME
 
