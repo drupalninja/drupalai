@@ -89,17 +89,21 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
     }
     else {
       $data = $response->getBody()->getContents();
-      $text = json_decode($data)->choices[0]->message->content;
+      $json = json_decode($data);
 
-      // Regex to match everything between <filse> and </files>.
-      preg_match('/(<files>.*?<\/files>)/s', $text, $matches);
-      $text = $matches[1] ?? '';
+      if (isset($json->choices[0]->message->content)) {
+        $text = $json->choices[0]->message->content;
 
-      if ($text) {
-        $this->contents[] = [
-          "role" => "assistant",
-          "content" => $text,
-        ];
+        // Regex to match everything between <filse> and </files>.
+        preg_match('/(<files>.*?<\/files>)/s', $text, $matches);
+        $text = $matches[1] ?? '';
+
+        if ($text) {
+          $this->contents[] = [
+            "role" => "assistant",
+            "content" => $text,
+          ];
+        }
       }
     }
 

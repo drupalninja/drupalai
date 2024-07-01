@@ -10,6 +10,80 @@ use Drupal\Core\Cache\CacheBackendInterface;
 class DrupalAiHelper {
 
   /**
+   * Get Component Folders.
+   *
+   * @return array
+   *   An array of component folders.
+   */
+  public static function getComponentFolders(): array {
+    // Get the active theme path.
+    $themePath = \Drupal::theme()->getActiveTheme()->getPath();
+    $componentsDir = $themePath . '/components';
+
+    if (!is_dir($componentsDir)) {
+      return [];
+    }
+
+    $folders = scandir($componentsDir);
+    $folders = array_diff($folders, ['.', '..']);
+
+    return $folders;
+  }
+
+  /**
+   * Get Story Content.
+   *
+   * @return string
+   *   The story component content.
+   */
+  public static function getStoryContent(): string {
+    // Get the active theme path.
+    $themePath = \Drupal::theme()->getActiveTheme()->getPath();
+    $componentDir = $themePath . '/components';
+
+    if (!is_dir($componentDir)) {
+      return '';
+    }
+
+    // Get the first subfolder in /components/.
+    $subfolders = scandir($componentDir);
+    $subfolders = array_diff($subfolders, ['.', '..']);
+    $firstSubfolder = '';
+
+    foreach ($subfolders as $subfolder) {
+      if (is_dir($componentDir . '/' . $subfolder)) {
+        $firstSubfolder = $componentDir . '/' . $subfolder;
+        break;
+      }
+    }
+
+    if ($firstSubfolder === '') {
+      return '';
+    }
+
+    $content = '';
+
+    // Get content from the first subfolder, only including specified file types.
+    $items = scandir($firstSubfolder);
+    $items = array_diff($items, ['.', '..']);
+
+    foreach ($items as $item) {
+      $path = $firstSubfolder . '/' . $item;
+      if (!is_dir($path)) {
+        // Only include *.twig, *.scss, and *.stories.js files.
+        if (preg_match('/\.(twig|scss|stories\.js)$/', $item)) {
+          // Get file content.
+          $content .= "Filename: $item\n";
+          $content .= "Content:\n";
+          $content .= file_get_contents($path) . "\n";
+        }
+      }
+    }
+
+    return $content;
+  }
+
+  /**
    * Create File With Path.
    *
    * @param string $file_path

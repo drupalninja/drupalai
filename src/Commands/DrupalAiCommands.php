@@ -49,6 +49,20 @@ class DrupalAiCommands extends DrushCommands {
   private $refactorContent = '';
 
   /**
+   * Story instructions.
+   *
+   * @var string
+   */
+  private $storyInstructions = '';
+
+  /**
+   * Story name.
+   *
+   * @var string
+   */
+  private $storyName = '';
+
+  /**
    * AI model.
    *
    * @var \Drupal\drupalai\DrupalAiChat
@@ -67,6 +81,77 @@ class DrupalAiCommands extends DrushCommands {
     'claude3' => 'Claude 3',
     'llama3' => 'Llama 3 (ollama)',
   ];
+
+  /**
+   * Generate Storybook component using AI.
+   *
+   * @command drupalai:createStory
+   * @aliases ai-create-story
+   */
+  public function createStory() {
+    $model = $this->io()->choice('Select the model type', $this->models, 0);
+
+    // Build AI model.
+    $this->aiModel = DrupalAiFactory::build($model);
+
+    // Prompt user for the new story.
+    $this->storyInstructions = $this->io()->ask('Describe the Storybook component you would like to create', 'Row of 3 testimonial cards (equal height, centered) with name, image, title, and quote');
+
+    // Prompt user for the name of the Storybook component.
+    $this->storyName = $this->io()->ask('Enter the name of the Storybook component', 'testimonial-cards');
+
+    // Log to drush console that the component is being created.
+    $this->io()->write("Creating Storybook component: {$this->storyName} ...\n\n");
+
+    // Create storybook component files using AI.
+    $this->generateStoryFilesFromAi();
+  }
+
+  /**
+   * Generate Story Files using AI.
+   */
+  public function generateStoryFilesFromAi() {
+    // Pass in Drupal configuration types for context.
+    $drupal_config_types = DrupalAiHelper::getBlockFieldDefinitions();
+
+    // Get the content of the example story (if components dir exists).
+    $example_story_content = DrupalAiHelper::getStoryContent();
+
+    $prompt = str_replace('DRUPAL_TYPES', $drupal_config_types, drupalai_get_prompt('story'));
+    $prompt = str_replace('COMPONENT_INSTRUCTIONS', $this->storyInstructions, $prompt);
+    $prompt = str_replace('STORY_NAME', $this->storyName, $prompt);
+
+    if (!empty($example_story_content)) {
+      $prompt = str_replace('EXAMPLE_COMPONENT', $example_story_content, $prompt);
+    }
+
+    $contents = $this->aiModel->getChat($prompt);
+
+    $xml = @simplexml_load_string($contents);
+
+    if (!empty($xml)) {
+      // Path to the components directory in the active theme.
+      $themePath = \Drupal::theme()->getActiveTheme()->getPath();
+      $directory = $this->storyName;
+
+      foreach ($xml->file as $file) {
+        $filename = (string) $file->filename;
+        $content = (string) $file->content;
+
+        // Create component file and any subdirectories in the main directory.
+        $file_path = DrupalAiHelper::createFileWithPath($themePath . '/components/' . $directory . '/' . trim($filename));
+
+        // Create component file.
+        $this->io()->write("- Creating file: {$filename} ...\n");
+
+        // Add file contents.
+        file_put_contents($file_path, trim($content) . "\n");
+      }
+    }
+    else {
+      $this->io()->write("No files generated.\n");
+    }
+  }
 
   /**
    * Generate Block configuration using AI.
@@ -117,6 +202,9 @@ class DrupalAiCommands extends DrushCommands {
         // Update file contents.
         file_put_contents($path, trim($content));
       }
+    }
+    else {
+      $this->io()->write("No files generated.\n");
     }
   }
 
@@ -247,6 +335,9 @@ class DrupalAiCommands extends DrushCommands {
           rename($path, $new_path);
         }
       }
+    }
+    else {
+      $this->io()->write("No files refactored.\n");
     }
   }
 
