@@ -417,7 +417,13 @@ class DrupalAiCommands extends DrushCommands
     $image_url = $this->io()->ask('Enter the URL of the image', '');
 
     // Log to drush console that the stories are being created.
-    $this->io()->write("Creating multiple stories from image: {$image_url} ...\n\n");
+    if (!empty($image_url)) {
+      $this->io()->write("Creating multiple stories from image URL ...\n\n");
+    }
+    else {
+      $this->io()->write("No image URL provided. Unable to create stories.\n");
+      return;
+    }
 
     // Generate stories using AI.
     $this->generateStoriesFromImageAi($image_url);

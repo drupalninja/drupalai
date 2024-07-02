@@ -59,8 +59,10 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
     $contents = [
       "role" => "user",
       "content" => [
-        "type" => "text",
-        "text" => $prompt,
+        [
+          "type" => "text",
+          "text" => $prompt,
+        ],
       ],
     ];
 
