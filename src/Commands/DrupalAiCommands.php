@@ -444,7 +444,7 @@ class DrupalAiCommands extends DrushCommands
     // Get the content of the example story (if components dir exists).
     $example_story_content = DrupalAiHelper::getStoryContent();
 
-    $prompt = str_replace('COMPONENT_INSTRUCTIONS', "Create multiple Storybook components based on the image", $config->get('stories_prompt_template') ?? drupalai_get_prompt('stories'));
+    $prompt = str_replace('COMPONENT_INSTRUCTIONS', "Create at least 5 Storybook components based on the image. Do not include header and footer.", $config->get('stories_prompt_template') ?? drupalai_get_prompt('stories'));
     $prompt = str_replace('DRUPAL_TYPES', $drupal_config_types, $prompt);
 
     if (!empty($example_story_content)) {
