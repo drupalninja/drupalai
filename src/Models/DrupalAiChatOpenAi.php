@@ -108,8 +108,6 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
     }
     else {
       $data = $response->getBody()->getContents();
-      print $data . "\n";
-
       $json = json_decode($data);
 
       if (isset($json->choices[0]->message->content)) {
