@@ -11,8 +11,7 @@ use Drupal\drupalai\DrupalAiHelper;
 /**
  * A Drush commandfile.
  */
-class DrupalAiCommands extends DrushCommands
-{
+class DrupalAiCommands extends DrushCommands {
 
   /**
    * Module name.
