@@ -11,7 +11,8 @@ use Drupal\drupalai\DrupalAiHelper;
 /**
  * A Drush commandfile.
  */
-class DrupalAiCommands extends DrushCommands {
+class DrupalAiCommands extends DrushCommands
+{
 
   /**
    * Module name.
@@ -111,13 +112,15 @@ class DrupalAiCommands extends DrushCommands {
    * Generate Story Files using AI.
    */
   public function generateStoryFilesFromAi() {
+    $config = \Drupal::config('drupalai.settings');
+
     // Pass in Drupal configuration types for context.
     $drupal_config_types = DrupalAiHelper::getBlockFieldDefinitions();
 
     // Get the content of the example story (if components dir exists).
     $example_story_content = DrupalAiHelper::getStoryContent();
 
-    $prompt = str_replace('DRUPAL_TYPES', $drupal_config_types, drupalai_get_prompt('story'));
+    $prompt = str_replace('DRUPAL_TYPES', $drupal_config_types, $config->get('component_prompt_template') ?? drupalai_get_prompt('story'));
     $prompt = str_replace('COMPONENT_INSTRUCTIONS', $this->storyInstructions, $prompt);
     $prompt = str_replace('STORY_NAME', $this->storyName, $prompt);
 
@@ -179,10 +182,12 @@ class DrupalAiCommands extends DrushCommands {
    * Generate Block Files using AI.
    */
   public function generateBlockFilesFromAi() {
+    $config = \Drupal::config('drupalai.settings');
+
     // Pass in Drupal configuration types for context.
     $drupal_config_types = DrupalAiHelper::getBlockFieldDefinitions();
 
-    $prompt = str_replace('DRUPAL_TYPES', $drupal_config_types, drupalai_get_prompt('block'));
+    $prompt = str_replace('DRUPAL_TYPES', $drupal_config_types, $config->get('block_prompt_template') ?? drupalai_get_prompt('block'));
     $prompt = str_replace('CONFIG_INSTRUCTIONS', $this->blockInstructions, $prompt);
 
     $contents = $this->aiModel->getChat($prompt);
@@ -316,8 +321,7 @@ class DrupalAiCommands extends DrushCommands {
         if (!file_exists($path)) {
           $this->io()->write("File not found: {$path}\n");
           continue;
-        }
-        else {
+        } else {
           // Log to drush console that a file is being refactored.
           $this->io()->write("- Updating file contents: {$path}\n");
 
@@ -335,8 +339,7 @@ class DrupalAiCommands extends DrushCommands {
           rename($path, $new_path);
         }
       }
-    }
-    else {
+    } else {
       $this->io()->write("No files refactored.\n");
     }
   }
@@ -393,6 +396,81 @@ class DrupalAiCommands extends DrushCommands {
       return FALSE;
     }
     return TRUE;
+  }
+
+  /**
+   * Generate multiple stories from an image using GPT-4 model.
+   *
+   * @command drupalai:createStoriesFromImage
+   * @aliases ai-create-stories-image
+   */
+  public function createStoriesFromImage() {
+    $model = 'gpt-4o';
+
+    // Log that the AI model is being used.
+    $this->io()->write("Using AI model: {$this->models[$model]}\n");
+
+    // Build AI model.
+    $this->aiModel = DrupalAiFactory::build($model);
+
+    // Prompt user for the image URL.
+    $image_url = $this->io()->ask('Enter the URL of the image', '');
+
+    // Log to drush console that the stories are being created.
+    $this->io()->write("Creating multiple stories from image: {$image_url} ...\n\n");
+
+    // Generate stories using AI.
+    $this->generateStoriesFromImageAi($image_url);
+  }
+
+  /**
+   * Generate Stories using AI.
+   *
+   * @param string $image_url
+   *   The URL of the image.
+   */
+  public function generateStoriesFromImageAi($image_url) {
+    $config = \Drupal::config('drupalai.settings');
+
+    // Pass in Drupal configuration types for context.
+    $drupal_config_types = DrupalAiHelper::getBlockFieldDefinitions();
+
+    // Get the content of the example story (if components dir exists).
+    $example_story_content = DrupalAiHelper::getStoryContent();
+
+    $prompt = str_replace('COMPONENT_INSTRUCTIONS', "Create multiple Storybook components based on the image", $config->get('stories_prompt_template') ?? drupalai_get_prompt('stories'));
+    $prompt = str_replace('DRUPAL_TYPES', $drupal_config_types, $prompt);
+
+    if (!empty($example_story_content)) {
+      $prompt = str_replace('EXAMPLE_COMPONENT', $example_story_content, $prompt);
+    }
+
+    // Pass text prompt and image URL to AI model.
+    $contents = $this->aiModel->getChat($prompt, $image_url);
+
+    $xml = @simplexml_load_string($contents);
+
+    if (!empty($xml)) {
+      // Path to the components directory in the active theme.
+      $themePath = \Drupal::theme()->getActiveTheme()->getPath();
+
+      foreach ($xml->file as $file) {
+        [$directory, $filename] = explode('/', (string) $file->filename);
+        $content = (string) $file->content;
+
+        // Create component file and any subdirectories in the main directory.
+        $file_path = DrupalAiHelper::createFileWithPath($themePath . '/components/' . $directory . '/' . trim($filename));
+
+        // Create component file.
+        $this->io()->write("- Creating file: {$filename} ...\n");
+
+        // Add file contents.
+        file_put_contents($file_path, trim($content) . "\n");
+      }
+    }
+    else {
+      $this->io()->write("No files generated.\n");
+    }
   }
 
 }

@@ -37,11 +37,13 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
    *
    * @param string $prompt
    *   The prompt to send to the API.
+   * @param string $image_url
+   *   The image URL to send to the API.
    *
    * @return string
    *   The response from the API.
    */
-  public function getChat(string $prompt): string {
+  public function getChat(string $prompt, string $image_url = ''): string {
     $config = \Drupal::config('drupalai.settings');
     $api_key = $config->get('openai_api_key');
 
@@ -54,10 +56,25 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
 
     $client = new Client();
 
-    $this->contents[] = [
+    $contents = [
       "role" => "user",
-      "content" => $prompt,
+      "content" => [
+        "type" => "text",
+        "text" => $prompt,
+      ],
     ];
+
+    // Add image URL if provided.
+    if ($image_url) {
+      $contents['content'][] = [
+        "type" => "image_url",
+        "image_url" => [
+          "url" => $image_url,
+        ],
+      ];
+    }
+
+    $this->contents[] = $contents;
 
     try {
       $response = $client->request('POST', $url, [

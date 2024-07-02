@@ -29,6 +29,10 @@ function drupalai_get_prompt($type) {
     case 'story':
       $filename = 'story-prompt.txt';
       break;
+
+    case 'stories':
+      $filename = 'stories-prompt.txt';
+      break;
   }
 
   return file_get_contents($path . $filename);
