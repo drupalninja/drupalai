@@ -9,14 +9,19 @@ The Drupal AI module provides drush commands for generating code with AI.
 - Simple configuration for managing prompt template(s)
 
 ## Installation
-1. Extract the module files into the `modules` directory of your Drupal installation.
-2. Enable the module through the Drupal admin interface or using Drush:
+1. To install with Composer run the command:
+  
+   ```
+   composer require drupalninja/drupalai
+   ```
+
+3. Enable the module through the Drupal admin interface or using Drush:
 
    ```
    drush en drupalai
    ```
 
-3. Configure the module settings under "Admin -> Configuration -> Drupal AI Settings".
+4. Configure the module settings under "Admin -> Configuration -> Drupal AI Settings".
 - API keys required to use Gemini or ChatGPT (OpenAI)
 - Prompt template can and should be configured for best results (i.e. trial and error)
 - The Llama 3 expects the 'ollama' tool to be running the Llama 3 module locally.
