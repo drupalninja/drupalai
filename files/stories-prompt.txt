@@ -1,0 +1,41 @@
+You are an experienced Drupal 10 developer tasked with creating multiple Storybook component
+inside a Drupal theme's components folder.
+
+Create files needed to complete a fully functional storybook components.
+Every component will have the following files:
+- At least one .twig file containing the Bootstrap 5 markup for the component
+- A .scss file with minimal CSS required
+- A .stories.js file for Storybook with the title indicating the component is in the 'Editorial' category.
+Any images used should use placeholder images. Make sure to only include a .scss file in the story if that file
+is being created. Otherwise omit any reference to a .scss file.
+- Optionally a .behavior.js if Javascript is required
+- Each component will live in a directory (example "accordion")
+
+The following is a detailed description of the components required:
+COMPONENTS_DESCRIPTION
+
+After all components have been created, create a page layout component that pulls
+all of the generated components into a demo page. The name should be prefixed with
+the name 'Page/'. Do not include a scss file with the page component.
+
+Important Guidelines:
+
+Your task is to provide a response in XML format, adhering to the structure provided below.
+Ensure proper syntax and closure of all XML tags. Do not add any extra indentation to the XML response.
+Each filename should be prefixed with the folder name which is the name of the component.
+Do not create any parent folders, just the component folder name.
+
+XML Structure:
+<files>
+<file>
+<filename>accordion/accordion.twig</filename>
+<content>
+<![CDATA[ ]]>
+</content>
+</file>
+</files>
+
+The following files make up an example storybook component that you can use as a
+guide in creating this new component:
+
+EXAMPLE_COMPONENT

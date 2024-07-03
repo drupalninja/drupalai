@@ -2,9 +2,9 @@
 
 namespace Drupal\drupalai\Models;
 
+use Drupal\drupalai\DrupalAiChatInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
-use Drupal\drupalai\DrupalAiChatInterface;
 
 /**
  * OpenAI implementation of DrupalAiChat.
@@ -33,15 +33,47 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
   }
 
   /**
-   * Get Chat.
+   * Prepare the request contents.
    *
    * @param string $prompt
    *   The prompt to send to the API.
+   * @param string $image_url
+   *   The image URL to send to the API.
    *
-   * @return string
-   *   The response from the API.
+   * @return array
+   *   The prepared request contents.
    */
-  public function getChat(string $prompt): string {
+  private function prepareRequestContents(string $prompt, string $image_url = ''): array {
+    $contents = [
+      "role" => "user",
+      "content" => [
+        [
+          "type" => "text",
+          "text" => $prompt,
+        ],
+      ],
+    ];
+
+    // Add image URL if provided.
+    if ($image_url) {
+      $contents['content'][] = [
+        "type" => "image_url",
+        "image_url" => [
+          "url" => $image_url,
+        ],
+      ];
+    }
+
+    return $contents;
+  }
+
+  /**
+   * Send request to OpenAI API.
+   *
+   * @return string|bool
+   *   The response from the API or FALSE on failure.
+   */
+  private function sendRequest(): string|bool {
     $config = \Drupal::config('drupalai.settings');
     $api_key = $config->get('openai_api_key');
 
@@ -53,11 +85,6 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
     $url = 'https://api.openai.com/v1/chat/completions';
 
     $client = new Client();
-
-    $this->contents[] = [
-      "role" => "user",
-      "content" => $prompt,
-    ];
 
     try {
       $response = $client->request('POST', $url, [
@@ -82,7 +109,6 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
     }
 
     $text = '';
-
     if ($response->getStatusCode() != 200) {
       \Drupal::logger('drupalai')->error($response->getBody()->getContents());
       return FALSE;
@@ -93,21 +119,61 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
 
       if (isset($json->choices[0]->message->content)) {
         $text = $json->choices[0]->message->content;
-
-        // Regex to match everything between <filse> and </files>.
-        preg_match('/(<files>.*?<\/files>)/s', $text, $matches);
-        $text = $matches[1] ?? '';
-
-        if ($text) {
-          $this->contents[] = [
-            "role" => "assistant",
-            "content" => $text,
-          ];
-        }
       }
     }
 
     return $text;
+  }
+
+  /**
+   * Get Chat.
+   *
+   * @param string $prompt
+   *   The prompt to send to the API.
+   * @param string $image_url
+   *   The image URL to send to the API.
+   *
+   * @return string
+   *   The response from the API.
+   */
+  public function getChat(string $prompt, string $image_url = ''): string {
+    $contents = $this->prepareRequestContents($prompt, $image_url);
+    $this->contents[] = $contents;
+
+    $text = $this->sendRequest();
+
+    if ($text) {
+      // Regex to match everything between <files> and </files>.
+      preg_match('/(<files>.*?<\/files>)/s', $text, $matches);
+      $text = $matches[1] ?? '';
+
+      if ($text) {
+        $this->contents[] = [
+          "role" => "assistant",
+          "content" => $text,
+        ];
+      }
+    }
+
+    return $text;
+  }
+
+  /**
+   * Get Image Description.
+   *
+   * @param string $prompt
+   *   The prompt to send to the API.
+   * @param string $image_url
+   *   The image URL to send to the API.
+   *
+   * @return string
+   *   The response from the API.
+   */
+  public function getImageDescription(string $prompt, string $image_url = ''): string {
+    $contents = $this->prepareRequestContents($prompt, $image_url);
+    $this->contents[] = $contents;
+
+    return $this->sendRequest();
   }
 
 }

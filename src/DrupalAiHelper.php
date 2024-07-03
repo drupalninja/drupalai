@@ -10,6 +10,29 @@ use Drupal\Core\Cache\CacheBackendInterface;
 class DrupalAiHelper {
 
   /**
+   * Models.
+   *
+   * @var array
+   */
+  private static $models = [
+    'gpt-4o' => 'ChatGPT-4o',
+    'gpt-3.5-turbo-0125' => 'ChatGPT 3.5 Turbo',
+    'gemini' => 'Gemini',
+    'claude3' => 'Claude 3',
+    'llama3' => 'Llama 3 (ollama)',
+  ];
+
+  /**
+   * Get Models.
+   *
+   * @return array
+   *   The models.
+   */
+  public static function getModels() {
+    return self::$models;
+  }
+
+  /**
    * Get Component Folders.
    *
    * @return array
