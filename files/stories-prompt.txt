@@ -4,13 +4,19 @@ inside a Drupal theme's components folder.
 Create files needed to complete a fully functional storybook components.
 Every component will have the following files:
 - At least one .twig file containing the Bootstrap 5 markup for the component
-- A required .scss file with minimal CSS required
-- A .stories.js file for Storybook with the title indicating the component is in the 'Editorial' category. Any images used should use placeholder images.
+- A .scss file with minimal CSS required
+- A .stories.js file for Storybook with the title indicating the component is in the 'Editorial' category.
+Any images used should use placeholder images. Make sure to only include a .scss file in the story if that file
+is being created. Otherwise omit any reference to a .scss file.
 - Optionally a .behavior.js if Javascript is required
 - Each component will live in a directory (example "accordion")
 
 The following is a detailed description of the components required:
 COMPONENTS_DESCRIPTION
+
+After all components have been created, create a page layout component that pulls
+all of the generated components into a demo page. The name should be prefixed with
+the name 'Page/'. Do not include a scss file with the page component.
 
 Important Guidelines:
 
