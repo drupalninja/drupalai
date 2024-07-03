@@ -124,6 +124,15 @@ class DrupalAiSettingsForm extends ConfigFormBase {
       '#rows' => 15,
     ];
 
+    $form['image_prompt_template'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Image Prompt Template'),
+      '#description' => $this->t('Enter the template for the image description prompt.'),
+      '#required' => TRUE,
+      '#default_value' => $config->get('image_prompt_template') ?? drupalai_get_prompt('image'),
+      '#rows' => 15,
+    ];
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -137,6 +146,7 @@ class DrupalAiSettingsForm extends ConfigFormBase {
     $config->set('block_prompt_template', $form_state->getValue('block_prompt_template'));
     $config->set('component_prompt_template', $form_state->getValue('component_prompt_template'));
     $config->set('stories_prompt_template', $form_state->getValue('stories_prompt_template'));
+    $config->set('image_prompt_template', $form_state->getValue('image_prompt_template'));
     $config->set('openai_api_key', $form_state->getValue('openai_api_key'));
     $config->set('gemini_api_key', $form_state->getValue('gemini_api_key'));
     $config->set('claude3_api_key', $form_state->getValue('claude3_api_key'));

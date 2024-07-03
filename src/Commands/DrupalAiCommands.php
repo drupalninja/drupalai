@@ -407,25 +407,71 @@ class DrupalAiCommands extends DrushCommands {
     $model = 'gpt-4o';
 
     // Log that the AI model is being used.
-    $this->io()->write("Using AI model: {$this->models[$model]}\n");
+    $this->io()->write("Using AI model for image translation: {$this->models[$model]}\n");
 
     // Build AI model.
     $this->aiModel = DrupalAiFactory::build($model);
 
     // Prompt user for the image URL.
-    $image_url = $this->io()->ask('Enter the URL of the image', '');
+    $last_image_url = \Drupal::cache()->get('last_image_url_prompt')->data ?? '';
+    $image_url = $this->io()->ask('Enter the URL of the image', $last_image_url);
 
     // Log to drush console that the stories are being created.
     if (!empty($image_url)) {
-      $this->io()->write("Creating multiple stories from image URL ...\n\n");
+      $this->io()->write("Generating details from image URL ...\n\n");
+
+      // Cache image url.
+      \Drupal::cache()->set('last_image_url_prompt', $image_url);
     }
     else {
-      $this->io()->write("No image URL provided. Unable to create stories.\n");
+      $this->io()->write("No image URL provided. Unable to continue.\n");
       return;
     }
 
-    // Generate stories using AI.
-    $this->generateStoriesFromImageAi($image_url);
+    // Get description of the image using AI.
+    $text = $this->generateDescriptionFromImageAi($image_url);
+
+    // Log to drush console that the description is being created.
+    if (!empty($text)) {
+      $this->io()->write("Description:\n\n{$text}\n\n");
+    }
+    else {
+      $this->io()->write("No description generated.\n");
+    }
+  }
+
+  /**
+   * Generate description from Image URL using AI.
+   *
+   * @param string $image_url
+   *   The URL of the image.
+   *
+   * @return string
+   *   The description of the image.
+   */
+  public function generateDescriptionFromImageAi($image_url): string {
+    $config = \Drupal::config('drupalai.settings');
+    $prompt = $config->get('image_prompt_template') ?? drupalai_get_prompt('image');
+
+    $text = '';
+
+    // Check if the description is already cached.
+    $cached_text = \Drupal::cache()->get('image_description_' . $image_url);
+
+    if ($cached_text) {
+      $text = $cached_text->data;
+    }
+    else {
+      // Pass text prompt and image URL to AI model.
+      $text = $this->aiModel->getImageDescription($prompt, $image_url);
+
+      // Cache the text for this image URL.
+      if (!empty($text)) {
+        \Drupal::cache()->set('image_description_' . $image_url, $text);
+      }
+    }
+
+    return $text;
   }
 
   /**
