@@ -414,11 +414,10 @@ class DrupalAiCommands extends DrushCommands {
 
     // Prompt user for the image URL.
     $last_image_url = \Drupal::cache()->get('last_image_url_prompt')->data ?? '';
-    $image_url = $this->io()->ask('Enter the URL of the image', $last_image_url);
+    $image_url = $this->io()->ask("Enter the URL of the web design image:\n", $last_image_url);
 
-    // Log to drush console that the stories are being created.
     if (!empty($image_url)) {
-      $this->io()->write("Generating details from image URL ...\n\n");
+      $this->io()->write("Translating image to text ...\n\n");
 
       // Cache image url.
       \Drupal::cache()->set('last_image_url_prompt', $image_url);
@@ -429,11 +428,18 @@ class DrupalAiCommands extends DrushCommands {
     }
 
     // Get description of the image using AI.
-    $text = $this->generateDescriptionFromImageAi($image_url);
+    $image_text = $this->generateDescriptionFromImageAi($image_url);
 
     // Log to drush console that the description is being created.
-    if (!empty($text)) {
-      $this->io()->write("Description:\n\n{$text}\n\n");
+    if (!empty($image_text)) {
+      $this->io()->write("Please select the model type for generating stories from the image.\n");
+
+      $model = $this->io()->choice('Select the model type', $this->models, 0);
+
+      // Build AI model (for next step).
+      $this->aiModel = DrupalAiFactory::build($model);
+
+      $this->generateStoriesFromImageAi($image_text);
     }
     else {
       $this->io()->write("No description generated.\n");
@@ -459,6 +465,7 @@ class DrupalAiCommands extends DrushCommands {
     $cached_text = \Drupal::cache()->get('image_description_' . $image_url);
 
     if ($cached_text) {
+      $this->io()->write("Using cached image description ...\n");
       $text = $cached_text->data;
     }
     else {
@@ -477,27 +484,23 @@ class DrupalAiCommands extends DrushCommands {
   /**
    * Generate Stories using AI.
    *
-   * @param string $image_url
-   *   The URL of the image.
+   * @param string $image_text
+   *   The translated text from the image.
    */
-  public function generateStoriesFromImageAi($image_url) {
+  public function generateStoriesFromImageAi($image_text) {
     $config = \Drupal::config('drupalai.settings');
-
-    // Pass in Drupal configuration types for context.
-    $drupal_config_types = DrupalAiHelper::getBlockFieldDefinitions();
 
     // Get the content of the example story (if components dir exists).
     $example_story_content = DrupalAiHelper::getStoryContent();
 
-    $prompt = str_replace('COMPONENT_INSTRUCTIONS', "Create at least 5 Storybook components based on the image. Do not include header and footer.", $config->get('stories_prompt_template') ?? drupalai_get_prompt('stories'));
-    $prompt = str_replace('DRUPAL_TYPES', $drupal_config_types, $prompt);
+    $prompt = str_replace('COMPONENTS_DESCRIPTION', $image_text, $config->get('stories_prompt_template') ?? drupalai_get_prompt('stories'));
 
     if (!empty($example_story_content)) {
       $prompt = str_replace('EXAMPLE_COMPONENT', $example_story_content, $prompt);
     }
 
-    // Pass text prompt and image URL to AI model.
-    $contents = $this->aiModel->getChat($prompt, $image_url);
+    // Pass text prompt to AI model.
+    $contents = $this->aiModel->getChat($prompt);
 
     $xml = @simplexml_load_string($contents);
 

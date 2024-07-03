@@ -117,7 +117,7 @@ class DrupalAiSettingsForm extends ConfigFormBase {
       '#type' => 'textarea',
       '#title' => $this->t('Stories Prompt Template'),
       '#description' => $this->t('Enter the template for the stories prompt.
-        The keywords \'STORIES_INSTRUCTIONS\' and \'STORIES\' are needed as well
+        The keywords \'COMPONENTS_DESCRIPTION\' and \'EXAMPLE_COMPONENT\' are needed as well
         as the XML format: <files><file><filename></filename><content></content></file></files>.'),
       '#required' => TRUE,
       '#default_value' => $config->get('stories_prompt_template') ?? drupalai_get_prompt('stories'),
