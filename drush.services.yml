@@ -1,5 +1,17 @@
 services:
-  drupalai.commands:
-    class: \Drupal\drupalai\Commands\DrupalAiCommands
+  drupalai.block_commands:
+    class: \Drupal\drupalai\Commands\DrupalAiBlock
+    tags:
+      - { name: drush.command }
+  drupalai.config_commands:
+    class: \Drupal\drupalai\Commands\DrupalAiConfig
+    tags:
+      - { name: drush.command }
+  drupalai.story_commands:
+    class: \Drupal\drupalai\Commands\DrupalAiStories
+    tags:
+      - { name: drush.command }
+  drupalai.module_commands:
+    class: \Drupal\drupalai\Commands\DrupalAiModule
     tags:
       - { name: drush.command }
