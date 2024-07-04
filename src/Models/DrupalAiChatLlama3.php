@@ -19,6 +19,23 @@ class DrupalAiChatLlama3 implements DrupalAiChatInterface {
   private $contents = [];
 
   /**
+   * The model.
+   *
+   * @var string
+   */
+  private $model;
+
+  /**
+   * Constructor.
+   *
+   * @param string $model
+   *   The model.
+   */
+  public function __construct(string $model) {
+    $this->model = $model;
+  }
+
+  /**
    * Get Chat.
    *
    * @param string $prompt
@@ -45,7 +62,7 @@ class DrupalAiChatLlama3 implements DrupalAiChatInterface {
     try {
       $response = $client->request('POST', $url, [
         'json' => [
-          "model" => "llama3",
+          "model" => $this->model,
           "messages" => $this->contents,
           "stream" => FALSE,
         ],

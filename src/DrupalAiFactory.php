@@ -33,8 +33,8 @@ class DrupalAiFactory {
 
       return new DrupalAiChatGemini();
     }
-    elseif ($model == 'llama3') {
-      return new DrupalAiChatLlama3();
+    elseif ($model == 'llama3' || $model == 'codellama' || $model == 'codegemma:7b') {
+      return new DrupalAiChatLlama3($model);
     }
     elseif ($model == 'claude3') {
       $api_key = $config->get('claude3_api_key');

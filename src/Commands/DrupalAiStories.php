@@ -64,14 +64,10 @@ class DrupalAiStories extends DrushCommands {
   public function generateStoryFilesFromAi() {
     $config = \Drupal::config('drupalai.settings');
 
-    // Pass in Drupal configuration types for context.
-    $drupal_config_types = DrupalAiHelper::getBlockFieldDefinitions();
-
     // Get the content of the example story (if components dir exists).
     $example_story_content = DrupalAiHelper::getStoryContent();
 
-    $prompt = str_replace('DRUPAL_TYPES', $drupal_config_types, $config->get('component_prompt_template') ?? drupalai_get_prompt('story'));
-    $prompt = str_replace('COMPONENT_INSTRUCTIONS', $this->storyInstructions, $prompt);
+    $prompt = str_replace('COMPONENT_INSTRUCTIONS', $this->storyInstructions, $config->get('component_prompt_template') ?? drupalai_get_prompt('story'));
     $prompt = str_replace('STORY_NAME', $this->storyName, $prompt);
 
     if (!empty($example_story_content)) {

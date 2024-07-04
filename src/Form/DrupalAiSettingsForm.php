@@ -106,7 +106,7 @@ class DrupalAiSettingsForm extends ConfigFormBase {
       '#type' => 'textarea',
       '#title' => $this->t('Component Prompt Template'),
       '#description' => $this->t('Enter the template for the component prompt.
-        The keywords \'DRUPAL_TYPES\', \'COMPONENT_INSTRUCTIONS\' and \'EXAMPLE_COMPONENT\' are needed as well
+        The keyword \'COMPONENT_INSTRUCTIONS\' and \'EXAMPLE_COMPONENT\' are needed as well
         as the XML format: <files><file><filename></filename><content></content></file></files>.'),
       '#required' => TRUE,
       '#default_value' => $config->get('component_prompt_template') ?? drupalai_get_prompt('component'),
