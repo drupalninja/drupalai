@@ -2,9 +2,9 @@
 
 namespace Drupal\drupalai\Models;
 
+use Drupal\drupalai\DrupalAiChatInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
-use Drupal\drupalai\DrupalAiChatInterface;
 
 /**
  * Claude3 implementation of DrupalAiChat.
@@ -12,22 +12,15 @@ use Drupal\drupalai\DrupalAiChatInterface;
 class DrupalAiChatClaude3 implements DrupalAiChatInterface {
 
   /**
-   * The contents of the request.
-   *
-   * @var array
-   */
-  private $contents = [];
-
-  /**
    * Get Chat.
    *
-   * @param string $prompt
-   *   The prompt to send to the API.
+   * @param array $messages
+   *   The AI messages.
    *
    * @return string
    *   The response from the API.
    */
-  public function getChat(string $prompt): string {
+  public function chat(array $messages): string {
     $config = \Drupal::config('drupalai.settings');
     $api_key = $config->get('claude3_api_key');
 
@@ -40,11 +33,6 @@ class DrupalAiChatClaude3 implements DrupalAiChatInterface {
 
     $client = new Client();
 
-    $this->contents[] = [
-      "role" => "user",
-      "content" => $prompt,
-    ];
-
     try {
       $response = $client->request('POST', $url, [
         'headers' => [
@@ -53,9 +41,9 @@ class DrupalAiChatClaude3 implements DrupalAiChatInterface {
           'x-api-key' => $api_key,
         ],
         'json' => [
-          "model" => "claude-3-opus-20240229",
+          "model" => "claude-3-5-sonnet-20240620",
           "max_tokens" => 4096,
-          "messages" => $this->contents,
+          "messages" => $messages,
         ],
       ]);
     }
@@ -70,20 +58,7 @@ class DrupalAiChatClaude3 implements DrupalAiChatInterface {
     }
     else {
       $data = $response->getBody()->getContents();
-      $text = json_decode($data)->content[0]->text;
-
-      // Regex to match everything between <filse> and </files>.
-      preg_match('/(<files>.*?<\/files>)/s', $text, $matches);
-      $text = $matches[1];
-
-      if ($text) {
-        $this->contents[] = [
-          "role" => "assistant",
-          "content" => $text,
-        ];
-
-        return $text;
-      }
+      return json_decode($data)->content[0]->text;
     }
   }
 

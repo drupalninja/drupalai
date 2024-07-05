@@ -3,6 +3,7 @@
 namespace Drupal\my_module\Commands;
 
 use Drush\Commands\DrushCommands;
+use GuzzleHttp\Client;
 
 /**
  * Defines a command to start a chat with the Claude AI.
@@ -19,17 +20,8 @@ class DrupalAiChat extends DrushCommands {
 
   /**
    * The Anthropic client.
-   *
-   * @var \Anthropic\Anthropic
    */
   protected $client;
-
-  /**
-   * The Tavily client.
-   *
-   * @var \Tavily\TavilyClient
-   */
-  protected $tavily;
 
   /**
    * The conversation history.
@@ -183,12 +175,6 @@ class DrupalAiChat extends DrushCommands {
     // Placeholder values for important constants and settings.
     $this->continuationExitPhrase = 'AUTOMODE_COMPLETE';
     $this->maxContinuationIterations = 25;
-
-    // Initialize the Anthropic client.
-    $this->client = new Anthropic('YOUR KEY');
-
-    // Initialize the Tavily client.
-    $this->tavily = new TavilyClient('YOUR KEY');
 
     // System prompt.
     $this->systemPrompt = <<<EOT
@@ -469,13 +455,33 @@ class DrupalAiChat extends DrushCommands {
    * @param string $query
    *   The query to search with.
    *
-   * @return string
+   * @return string|null
    *   The search response.
    */
   protected function tavilySearch($query) {
     try {
-      $response = $this->tavily->qna_search(['query' => $query, 'search_depth' => 'advanced']);
-      return $response;
+      $api_key = 'your-actual-api-key';
+      $url = 'https://api.tavily.com/search';
+
+      $client = new Client();
+
+      $response = $client->request('POST', $url, [
+        'api_key' => $api_key,
+        'query' => $query,
+        'search_depth' => 'basic',
+        'include_answer' => FALSE,
+        'include_images' => TRUE,
+        'include_raw_content' => FALSE,
+        'max_results' => 5,
+        'include_domains' => [],
+        'exclude_domains' => [],
+      ]);
+
+      if ($response->getStatusCode() == 200) {
+        return $response->getBody()->getContents();
+      }
+
+      return NULL;
     }
     catch (\Exception $e) {
       return "Error performing search: " . $e->getMessage();
@@ -594,15 +600,33 @@ class DrupalAiChat extends DrushCommands {
 
     $messages = array_merge($this->conversationHistory, $currentConversation);
 
+    $config = \Drupal::config('drupalai.settings');
+
+    $url = 'https://api.anthropic.com/v1/messages';
+    $api_key = $config->get('claude3_api_key');
+
+    if (!$api_key) {
+      \Drupal::logger('drupalai')->error('Claude3 API key not set.');
+      return FALSE;
+    }
+    $client = new Client();
+
     try {
-      $response = $this->client->messages->create([
-        'model' => "claude-3-5-sonnet-20240620",
-        'max_tokens' => 4000,
-        'system' => $this->updateSystemPrompt($currentIteration, $maxIterations),
-        'messages' => $messages,
-        'tools' => $this->tools,
-        'tool_choice' => [
-          'type' => "auto",
+      $response = $client->request('POST', $url, [
+        'headers' => [
+          'content-type' => 'application/json',
+          'anthropic-version' => '2023-06-01',
+          'x-api-key' => $api_key,
+        ],
+        'json' => [
+          "model" => "claude-3-5-sonnet-20240620",
+          "max_tokens" => 4096,
+          'system' => $this->updateSystemPrompt($currentIteration, $maxIterations),
+          "messages" => $messages,
+          'tools' => $this->tools,
+          'tool_choice' => [
+            'type' => "auto",
+          ],
         ],
       ]);
     }
@@ -660,15 +684,33 @@ class DrupalAiChat extends DrushCommands {
         ];
         $messages = array_merge($this->conversationHistory, $currentConversation);
 
+        $config = \Drupal::config('drupalai.settings');
+
+        $url = 'https://api.anthropic.com/v1/messages';
+        $api_key = $config->get('claude3_api_key');
+
+        if (!$api_key) {
+          \Drupal::logger('drupalai')->error('Claude3 API key not set.');
+          return FALSE;
+        }
+        $client = new Client();
+
         try {
-          $toolResponse = $this->client->messages->create([
-            'model' => "claude-3-5-sonnet-20240620",
-            'max_tokens' => 4000,
-            'system' => $this->updateSystemPrompt($currentIteration, $maxIterations),
-            'messages' => $messages,
-            'tools' => $this->tools,
-            'tool_choice' => [
-              'type' => "auto",
+          $toolResponse = $client->request('POST', $url, [
+            'headers' => [
+              'content-type' => 'application/json',
+              'anthropic-version' => '2023-06-01',
+              'x-api-key' => $api_key,
+            ],
+            'json' => [
+              "model" => "claude-3-5-sonnet-20240620",
+              "max_tokens" => 4096,
+              'system' => $this->updateSystemPrompt($currentIteration, $maxIterations),
+              "messages" => $messages,
+              'tools' => $this->tools,
+              'tool_choice' => [
+                'type' => "auto",
+              ],
             ],
           ]);
 

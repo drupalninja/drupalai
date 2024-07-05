@@ -8,14 +8,14 @@ namespace Drupal\drupalai;
 interface DrupalAiChatInterface {
 
   /**
-   * Get Chat.
+   * Chat.
    *
-   * @param string $prompt
-   *   The AI prompt.
+   * @param array $messages
+   *   The AI messages.
    *
    * @return string
    *   The AI completion response.
    */
-  public function getChat(string $prompt): string;
+  public function chat(array $messages): string;
 
 }

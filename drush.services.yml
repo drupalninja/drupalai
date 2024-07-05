@@ -15,3 +15,7 @@ services:
     class: \Drupal\drupalai\Commands\DrupalAiModule
     tags:
       - { name: drush.command }
+  drupalai.chat_commands:
+    class: \Drupal\drupalai\Commands\DrupalAiChat
+    tags:
+      - { name: drush.command }
