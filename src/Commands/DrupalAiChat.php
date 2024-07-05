@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\my_module\Commands;
+namespace Drupal\drupalai\Commands;
 
 use Drush\Commands\DrushCommands;
 use GuzzleHttp\Client;
@@ -8,7 +8,7 @@ use GuzzleHttp\Client;
 /**
  * Defines a command to start a chat with the Claude AI.
  *
- * @package Drupal\my_module\Commands
+ * @package Drupal\drupalai\Commands
  */
 class DrupalAiChat extends DrushCommands {
 
@@ -17,11 +17,6 @@ class DrupalAiChat extends DrushCommands {
   const CLAUDE_COLOR = "\e[34m";
   const TOOL_COLOR = "\e[33m";
   const RESULT_COLOR = "\e[32m";
-
-  /**
-   * The Anthropic client.
-   */
-  protected $client;
 
   /**
    * The conversation history.
@@ -185,40 +180,40 @@ class DrupalAiChat extends DrushCommands {
   /**
    * Command to start chat.
    *
-   * @command chat:start
-   * @alias cs
-   * @usage chat:start
+   * @command drupaai:chatStart
+   * @aliases ai-chat
+   * @usage drupaai:chatStart
    *   Starts the chat with the Claude AI.
    */
   public function chatStart() {
-    $this->printColored("Welcome to the Claude-3.5-Sonnet Engineer Chat with Image Support!", CLAUDE_COLOR);
-    $this->printColored("Type 'exit' to end the conversation.", CLAUDE_COLOR);
-    $this->printColored("Type 'image' to include an image in your message.", CLAUDE_COLOR);
-    $this->printColored("Type 'automode [number]' to enter Autonomous mode with a specific number of iterations.", CLAUDE_COLOR);
-    $this->printColored("While in automode, press Ctrl+C at any time to exit the automode to return to regular chat.", CLAUDE_COLOR);
+    $this->printColored("Welcome to the Claude-3.5-Sonnet Engineer Chat with Image Support!", self::CLAUDE_COLOR);
+    $this->printColored("Type 'exit' to end the conversation.", self::CLAUDE_COLOR);
+    $this->printColored("Type 'image' to include an image in your message.", self::CLAUDE_COLOR);
+    $this->printColored("Type 'automode [number]' to enter Autonomous mode with a specific number of iterations.", self::CLAUDE_COLOR);
+    $this->printColored("While in automode, press Ctrl+C at any time to exit the automode to return to regular chat.", self::CLAUDE_COLOR);
 
     while (TRUE) {
-      echo "\n" . USER_COLOR . "You: ";
+      echo "\n" . self::USER_COLOR . "You: ";
       $userInput = trim(fgets(STDIN));
 
       if (strtolower($userInput) == 'exit') {
-        $this->printColored("Thank you for chatting. Goodbye!", CLAUDE_COLOR);
+        $this->printColored("Thank you for chatting. Goodbye!", self::CLAUDE_COLOR);
         break;
       }
 
       if (strtolower($userInput) == 'image') {
-        echo USER_COLOR . "Drag and drop your image here: ";
+        echo self::USER_COLOR . "Drag and drop your image here: ";
         $imagePath = trim(fgets(STDIN));
         $imagePath = str_replace("'", "", $imagePath);
 
         if (file_exists($imagePath)) {
-          echo USER_COLOR . "You (prompt for image): ";
+          echo self::USER_COLOR . "You (prompt for image): ";
           $userInput = trim(fgets(STDIN));
           [$response] = $this->chatWithClaude($userInput, $imagePath);
           $this->processAndDisplayResponse($response);
         }
         else {
-          $this->printColored("Invalid image path. Please try again.", CLAUDE_COLOR);
+          $this->printColored("Invalid image path. Please try again.", self::CLAUDE_COLOR);
           continue;
         }
       }
@@ -226,10 +221,10 @@ class DrupalAiChat extends DrushCommands {
         $parts = explode(" ", $userInput);
         $maxIterations = count($parts) > 1 && is_numeric($parts[1]) ? intval($parts[1]) : $this->maxContinuationIterations;
         $this->automode = TRUE;
-        $this->printColored("Entering automode with $maxIterations iterations. Press Ctrl+C to exit automode at any time.", TOOL_COLOR);
-        $this->printColored("Press Ctrl+C at any time to exit the automode loop.", TOOL_COLOR);
+        $this->printColored("Entering automode with $maxIterations iterations. Press Ctrl+C to exit automode at any time.", self::TOOL_COLOR);
+        $this->printColored("Press Ctrl+C at any time to exit the automode loop.", self::TOOL_COLOR);
 
-        echo "\n" . USER_COLOR . "You: ";
+        echo "\n" . self::USER_COLOR . "You: ";
         $userInput = trim(fgets(STDIN));
         $iterationCount = 0;
 
@@ -239,24 +234,24 @@ class DrupalAiChat extends DrushCommands {
             $this->processAndDisplayResponse($response);
 
             if ($exitContinuation || strpos($response, $this->continuationExitPhrase) !== FALSE) {
-              $this->printColored("Automode completed.", TOOL_COLOR);
+              $this->printColored("Automode completed.", self::TOOL_COLOR);
               $this->automode = FALSE;
             }
             else {
-              $this->printColored("Continuation iteration " . ($iterationCount + 1) . " completed.", TOOL_COLOR);
-              $this->printColored("Press Ctrl+C to exit automode.", TOOL_COLOR);
+              $this->printColored("Continuation iteration " . ($iterationCount + 1) . " completed.", self::TOOL_COLOR);
+              $this->printColored("Press Ctrl+C to exit automode.", self::TOOL_COLOR);
               $userInput = "Continue with the next step.";
               $iterationCount++;
             }
 
             if ($iterationCount >= $maxIterations) {
-              $this->printColored("Max iterations reached. Exiting automode.", TOOL_COLOR);
+              $this->printColored("Max iterations reached. Exiting automode.", self::TOOL_COLOR);
               $this->automode = FALSE;
             }
           }
         }
         catch (\Exception $e) {
-          $this->printColored("\nAutomode interrupted by user. Exiting automode.", TOOL_COLOR);
+          $this->printColored("\nAutomode interrupted by user. Exiting automode.", self::TOOL_COLOR);
           $this->automode = FALSE;
           if (end($this->conversationHistory)['role'] == "user") {
             $this->conversationHistory[] = ["role" => "assistant", "content" => "Automode interrupted. How can I assist you further?"];
@@ -563,10 +558,10 @@ class DrupalAiChat extends DrushCommands {
     $currentConversation = [];
 
     if ($imagePath) {
-      $this->printColored("Processing image at path: $imagePath", TOOL_COLOR);
+      $this->printColored("Processing image at path: $imagePath", self::TOOL_COLOR);
       $imageBase64 = $this->encodeImageToBase64($imagePath);
       if (strpos($imageBase64, "Error") === 0) {
-        $this->printColored("Error encoding image: $imageBase64", TOOL_COLOR);
+        $this->printColored("Error encoding image: $imageBase64", self::TOOL_COLOR);
         return [
           "I'm sorry, there was an error processing the image. Please try again.",
           FALSE,
@@ -592,7 +587,7 @@ class DrupalAiChat extends DrushCommands {
       ];
 
       $currentConversation[] = $imageMessage;
-      $this->printColored("Image message added to conversation history", TOOL_COLOR);
+      $this->printColored("Image message added to conversation history", self::TOOL_COLOR);
     }
     else {
       $currentConversation[] = ["role" => "user", "content" => $userInput];
@@ -631,7 +626,7 @@ class DrupalAiChat extends DrushCommands {
       ]);
     }
     catch (\Exception $e) {
-      $this->printColored("Error calling Claude API: " . $e->getMessage(), TOOL_COLOR);
+      $this->printColored("Error calling Claude API: " . $e->getMessage(), self::TOOL_COLOR);
       return [
         "I'm sorry, there was an error communicating with the AI. Please try again.",
         FALSE,
@@ -653,12 +648,12 @@ class DrupalAiChat extends DrushCommands {
         $toolInput = $contentBlock['input'];
         $toolUseId = $contentBlock['id'];
 
-        $this->printColored("Tool Used: $toolName", TOOL_COLOR);
-        $this->printColored("Tool Input: " . json_encode($toolInput), TOOL_COLOR);
+        $this->printColored("Tool Used: $toolName", self::TOOL_COLOR);
+        $this->printColored("Tool Input: " . json_encode($toolInput), self::TOOL_COLOR);
 
         $result = $this->executeTool($toolName, $toolInput);
 
-        $this->printColored("Tool Result: $result", RESULT_COLOR);
+        $this->printColored("Tool Result: $result", self::RESULT_COLOR);
 
         $currentConversation[] = [
           "role" => "assistant",
@@ -721,7 +716,7 @@ class DrupalAiChat extends DrushCommands {
           }
         }
         catch (\Exception $e) {
-          $this->printColored("Error in tool response: " . $e->getMessage(), TOOL_COLOR);
+          $this->printColored("Error in tool response: " . $e->getMessage(), self::TOOL_COLOR);
           $assistantResponse .= "\nI encountered an error while processing the tool result. Please try again.";
         }
       }
@@ -746,29 +741,29 @@ class DrupalAiChat extends DrushCommands {
    */
   protected function processAndDisplayResponse($response) {
     if (strpos($response, "Error") === 0 || strpos($response, "I'm sorry") === 0) {
-      $this->printColored($response, TOOL_COLOR);
+      $this->printColored($response, self::TOOL_COLOR);
     }
     else {
       if (strpos($response, "```") !== FALSE) {
         $parts = explode("```", $response);
         foreach ($parts as $i => $part) {
           if ($i % 2 == 0) {
-            $this->printColored($part, CLAUDE_COLOR);
+            $this->printColored($part, self::CLAUDE_COLOR);
           }
           else {
             $lines = explode("\n", $part);
             $code = implode("\n", array_slice($lines, 1));
             if ($code) {
-              $this->printColored("Code:\n$code", CLAUDE_COLOR);
+              $this->printColored("Code:\n$code", self::CLAUDE_COLOR);
             }
             else {
-              $this->printColored($part, CLAUDE_COLOR);
+              $this->printColored($part, self::CLAUDE_COLOR);
             }
           }
         }
       }
       else {
-        $this->printColored($response, CLAUDE_COLOR);
+        $this->printColored($response, self::CLAUDE_COLOR);
       }
     }
   }
