@@ -54,6 +54,13 @@ class DrupalAiChat extends DrushCommands {
   protected $maxContinuationIterations;
 
   /**
+   * The base file path.
+   *
+   * @var string
+   */
+  protected $baseFilePath;
+
+  /**
    * The tools available for use.
    *
    * @var array
@@ -171,6 +178,8 @@ class DrupalAiChat extends DrushCommands {
     $this->continuationExitPhrase = 'AUTOMODE_COMPLETE';
     $this->maxContinuationIterations = 25;
 
+    $this->baseFilePath = \Drupal::service('file_system')->realpath('public://drupalai/');
+
     // System prompt.
     $this->systemPrompt = <<<EOT
     (Your system prompt text here)
@@ -186,7 +195,7 @@ class DrupalAiChat extends DrushCommands {
    *   Starts the chat with the Claude AI.
    */
   public function chatStart() {
-    $this->printColored("Welcome to the Claude-3.5-Sonnet Engineer Chat with Image Support!", self::CLAUDE_COLOR);
+    $this->printColored("Welcome to the Claude-3.5-Sonnet DrupalAI Chat with Image Support!", self::CLAUDE_COLOR);
     $this->printColored("Type 'exit' to end the conversation.", self::CLAUDE_COLOR);
     $this->printColored("Type 'image' to include an image in your message.", self::CLAUDE_COLOR);
     $this->printColored("Type 'automode [number]' to enter Autonomous mode with a specific number of iterations.", self::CLAUDE_COLOR);
@@ -309,9 +318,11 @@ class DrupalAiChat extends DrushCommands {
    *   The result of the folder creation.
    */
   protected function createFolder($path) {
+    $fullPath = $this->baseFilePath . '/' . $path;
+
     try {
-      if (!file_exists($path)) {
-        mkdir($path, 0777, TRUE);
+      if (!file_exists($fullPath)) {
+        mkdir($fullPath, 0777, TRUE);
       }
       return "Folder created: $path";
     }
@@ -332,8 +343,10 @@ class DrupalAiChat extends DrushCommands {
    *   The result of the file creation.
    */
   protected function createFile($path, $content = "") {
+    $fullPath = $this->baseFilePath . '/' . $path;
+
     try {
-      file_put_contents($path, $content);
+      file_put_contents($fullPath, $content);
       return "File created: $path";
     }
     catch (\Exception $e) {
@@ -355,6 +368,8 @@ class DrupalAiChat extends DrushCommands {
    *   The result of the diff generation and application.
    */
   protected function generateAndApplyDiff($originalContent, $newContent, $path) {
+    $fullPath = $this->baseFilePath . '/' . $path;
+
     $originalLines = explode("\n", $originalContent);
     $newLines = explode("\n", $newContent);
     $diff = [];
@@ -371,7 +386,7 @@ class DrupalAiChat extends DrushCommands {
     }
 
     try {
-      file_put_contents($path, $newContent);
+      file_put_contents($fullPath, $newContent);
       return "Changes applied to $path:\n" . implode('', $diff);
     }
     catch (\Exception $e) {
@@ -391,9 +406,11 @@ class DrupalAiChat extends DrushCommands {
    *   The result of the file writing.
    */
   protected function writeToFile($path, $content) {
+    $fullPath = $this->baseFilePath . '/' . $path;
+
     try {
-      if (file_exists($path)) {
-        $originalContent = file_get_contents($path);
+      if (file_exists($fullPath)) {
+        $originalContent = file_get_contents($fullPath);
         $result = $this->generateAndApplyDiff($originalContent, $content, $path);
       }
       else {
@@ -417,8 +434,10 @@ class DrupalAiChat extends DrushCommands {
    *   The content of the file.
    */
   protected function readFile($path) {
+    $fullPath = $this->baseFilePath . '/' . $path;
+
     try {
-      return file_get_contents($path);
+      return file_get_contents($fullPath);
     }
     catch (\Exception $e) {
       return "Error reading file: " . $e->getMessage();
@@ -435,8 +454,10 @@ class DrupalAiChat extends DrushCommands {
    *   The list of files.
    */
   protected function listFiles($path = ".") {
+    $fullPath = $this->baseFilePath . '/' . $path;
+
     try {
-      $files = array_diff(scandir($path), ['.', '..']);
+      $files = array_diff(scandir($fullPath), ['.', '..']);
       return implode("\n", $files);
     }
     catch (\Exception $e) {
@@ -454,8 +475,10 @@ class DrupalAiChat extends DrushCommands {
    *   The search response.
    */
   protected function tavilySearch($query) {
+    $config = \Drupal::config('drupalai.settings');
+
     try {
-      $api_key = 'your-actual-api-key';
+      $api_key = $config->get('tavily_api_key');
       $url = 'https://api.tavily.com/search';
 
       $client = new Client();
