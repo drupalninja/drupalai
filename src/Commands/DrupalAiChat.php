@@ -263,7 +263,10 @@ class DrupalAiChat extends DrushCommands {
           $this->printColored("\nAutomode interrupted by user. Exiting automode.", self::TOOL_COLOR);
           $this->automode = FALSE;
           if (end($this->conversationHistory)['role'] == "user") {
-            $this->conversationHistory[] = ["role" => "assistant", "content" => "Automode interrupted. How can I assist you further?"];
+            $this->conversationHistory[] = [
+              "role" => "assistant",
+              "content" => "Automode interrupted. How can I assist you further?",
+            ];
           }
         }
       }
@@ -305,7 +308,7 @@ class DrupalAiChat extends DrushCommands {
    *   The color of the text.
    */
   protected function printColored($text, $color) {
-    $this->output()->writeln($color . $text);
+    $this->output()->writeln($color . $text . " ");
   }
 
   /**
@@ -511,31 +514,31 @@ class DrupalAiChat extends DrushCommands {
    *
    * @param string $toolName
    *   The name of the tool to execute.
-   * @param array $toolInput
+   * @param object $toolInput
    *   The input of the tool.
    *
    * @return string
    *   The result of the tool execution.
    */
-  protected function executeTool($toolName, array $toolInput) {
+  protected function executeTool($toolName, object $toolInput) {
     switch ($toolName) {
       case 'create_folder':
-        return $this->createFolder($toolInput['path']);
+        return $this->createFolder($toolInput->path);
 
       case 'create_file':
-        return $this->createFile($toolInput['path'], $toolInput['content'] ?? '');
+        return $this->createFile($toolInput->path, $toolInput->content ?? '');
 
       case 'write_to_file':
-        return $this->writeToFile($toolInput['path'], $toolInput['content']);
+        return $this->writeToFile($toolInput->path, $toolInput->content);
 
       case 'read_file':
-        return $this->readFile($toolInput['path']);
+        return $this->readFile($toolInput->path);
 
       case 'list_files':
-        return $this->listFiles($toolInput['path'] ?? '.');
+        return $this->listFiles($toolInput->path ?? '.');
 
       case 'tavily_search':
-        return $this->tavilySearch($toolInput['query']);
+        return $this->tavilySearch($toolInput->query);
 
       default:
         return "Unknown tool: $toolName";
@@ -578,8 +581,6 @@ class DrupalAiChat extends DrushCommands {
    *   The assistant response and the exit continuation status.
    */
   protected function chatWithClaude($userInput, $imagePath = NULL, $currentIteration = NULL, $maxIterations = NULL) {
-    $currentConversation = [];
-
     if ($imagePath) {
       $this->printColored("Processing image at path: $imagePath", self::TOOL_COLOR);
       $imageBase64 = $this->encodeImageToBase64($imagePath);
@@ -609,14 +610,17 @@ class DrupalAiChat extends DrushCommands {
         ]
       ];
 
-      $currentConversation[] = $imageMessage;
+      $this->conversationHistory[] = $imageMessage;
       $this->printColored("Image message added to conversation history", self::TOOL_COLOR);
     }
     else {
-      $currentConversation[] = ["role" => "user", "content" => $userInput];
+      $this->conversationHistory[] = [
+        "role" => "user",
+        "content" => $userInput,
+      ];
     }
 
-    $messages = array_merge($this->conversationHistory, $currentConversation);
+    $messages = $this->conversationHistory;
 
     $config = \Drupal::config('drupalai.settings');
 
@@ -630,6 +634,8 @@ class DrupalAiChat extends DrushCommands {
     $client = new Client();
 
     try {
+      print_r($messages);
+
       $response = $client->request('POST', $url, [
         'headers' => [
           'content-type' => 'application/json',
@@ -659,17 +665,19 @@ class DrupalAiChat extends DrushCommands {
     $assistantResponse = "";
     $exitContinuation = FALSE;
 
-    foreach ($response->content as $contentBlock) {
-      if ($contentBlock['type'] == "text") {
-        $assistantResponse .= $contentBlock['text'];
-        if (strpos($contentBlock['text'], $this->continuationExitPhrase) !== FALSE) {
+    $data = json_decode($response->getBody()->getContents());
+
+    foreach ($data->content as $contentBlock) {
+      if ($contentBlock->type == "text") {
+        $assistantResponse .= $contentBlock->text . " ";
+        if (strpos($contentBlock->text, $this->continuationExitPhrase) !== FALSE) {
           $exitContinuation = TRUE;
         }
       }
-      elseif ($contentBlock['type'] == "tool_use") {
-        $toolName = $contentBlock['name'];
-        $toolInput = $contentBlock['input'];
-        $toolUseId = $contentBlock['id'];
+      elseif ($contentBlock->type == "tool_use") {
+        $toolName = $contentBlock->name;
+        $toolInput = $contentBlock->input;
+        $toolUseId = $contentBlock->id;
 
         $this->printColored("Tool Used: $toolName", self::TOOL_COLOR);
         $this->printColored("Tool Input: " . json_encode($toolInput), self::TOOL_COLOR);
@@ -678,7 +686,7 @@ class DrupalAiChat extends DrushCommands {
 
         $this->printColored("Tool Result: $result", self::RESULT_COLOR);
 
-        $currentConversation[] = [
+        $this->conversationHistory[] = [
           "role" => "assistant",
           "content" => [
             [
@@ -690,7 +698,7 @@ class DrupalAiChat extends DrushCommands {
           ],
         ];
 
-        $currentConversation[] = [
+        $this->conversationHistory[] = [
           "role" => "user",
           "content" => [
             [
@@ -700,7 +708,7 @@ class DrupalAiChat extends DrushCommands {
             ],
           ],
         ];
-        $messages = array_merge($this->conversationHistory, $currentConversation);
+        $messages = $this->conversationHistory;
 
         $config = \Drupal::config('drupalai.settings');
 
@@ -732,27 +740,28 @@ class DrupalAiChat extends DrushCommands {
             ],
           ]);
 
-          foreach ($toolResponse->content as $toolContentBlock) {
-            if ($toolContentBlock['type'] == "text") {
-              $assistantResponse .= $toolContentBlock['text'];
+          $data = json_decode($toolResponse->getBody()->getContents());
+
+          foreach ($data->content as $toolContentBlock) {
+            if ($toolContentBlock->type == "text") {
+              $assistantResponse .= $toolContentBlock->text . " ";
             }
           }
         }
         catch (\Exception $e) {
           $this->printColored("Error in tool response: " . $e->getMessage(), self::TOOL_COLOR);
-          $assistantResponse .= "\nI encountered an error while processing the tool result. Please try again.";
+          $assistantResponse .= "\nI encountered an error while processing the tool result. Please try again. ";
         }
       }
     }
 
     if ($assistantResponse) {
-      $currentConversation[] = [
+      $this->conversationHistory[] = [
         "role" => "assistant",
         "content" => $assistantResponse,
       ];
     }
 
-    $this->conversationHistory = array_merge($this->conversationHistory, [["role" => "assistant", "content" => $assistantResponse]]);
     return [$assistantResponse, $exitContinuation];
   }
 
