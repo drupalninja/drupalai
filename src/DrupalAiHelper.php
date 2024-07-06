@@ -15,7 +15,7 @@ class DrupalAiHelper {
    *
    * @var array
    */
-  private static $models = [
+  protected static $models = [
     'gpt-4o' => 'ChatGPT-4o',
     'gpt-3.5-turbo-0125' => 'ChatGPT 3.5 Turbo',
     'gemini' => 'Gemini',
@@ -26,13 +26,309 @@ class DrupalAiHelper {
   ];
 
   /**
+   * The Chat tools available for use.
+   *
+   * @var array
+   */
+  protected static $tools = [
+    [
+      "name" => "create_files",
+      "description" => "Create new files at the specified path with content. Use this when you need to create new files in the project structure.",
+      "input_schema" => [
+        "type" => "object",
+        "properties" => [
+          "files" => [
+            "type" => "array",
+            "items" => [
+              "type" => "object",
+              "properties" => [
+                "path" => [
+                  "type" => "string",
+                  "description" => "The path of the file.",
+                ],
+                "content" => [
+                  "type" => "string",
+                  "description" => "The contents of the file. Do not use literal block scalar (|) for content.",
+                ],
+              ],
+              "required" => [
+                "path",
+                "content",
+              ],
+            ],
+            "description" => "An array of files with their properties.",
+          ],
+        ],
+        "required" => ["files"],
+      ],
+    ],
+    [
+      "name" => "write_to_file",
+      "description" => "Write content to a file at the specified path. If the file exists, only the necessary changes will be applied. If the file doesn't exist, it will be created. Always provide the full intended content of the file.",
+      "input_schema" => [
+        "type" => "object",
+        "properties" => [
+          "path" => [
+            "type" => "string",
+            "description" => "The path of the file to write to",
+          ],
+          "content" => [
+            "type" => "string",
+            "description" => "The full content to write to the file",
+          ],
+        ],
+        "required" => [
+          "path",
+          "content",
+        ],
+      ],
+    ],
+    [
+      "name" => "read_file",
+      "description" => "Read the contents of a file at the specified path. Use this when you need to examine the contents of an existing file.",
+      "input_schema" => [
+        "type" => "object",
+        "properties" => [
+          "path" => [
+            "type" => "string",
+            "description" => "The path of the file to read relative to a Drupal root directory.",
+          ],
+        ],
+        "required" => [
+          "path",
+        ],
+      ],
+    ],
+    [
+      "name" => "list_files",
+      "description" => "List all files and directories for a path relative to the Drupal root directory. Use this when you need to see the contents of the current directory.",
+      "input_schema" => [
+        "type" => "object",
+        "properties" => [
+          "path" => [
+            "type" => "string",
+            "description" => "The path of the folder to list files in. Defaults to the current project directory.",
+          ],
+        ],
+      ],
+    ],
+    [
+      "name" => "tavily_search",
+      "description" => "Perform a web search using Tavily API to get up-to-date information or additional context. Use this when you need current information or feel a search could provide a better answer.",
+      "input_schema" => [
+        "type" => "object",
+        "properties" => [
+          "query" => [
+            "type" => "string",
+            "description" => "The search query",
+          ],
+        ],
+        "required" => [
+          "query",
+        ],
+      ],
+    ],
+  ];
+
+  /**
+   * Creates a file.
+   *
+   * @param string $path
+   *   The path of the file to create.
+   * @param string $content
+   *   The content of the file.
+   *
+   * @return string
+   *   The result of the file creation.
+   */
+  public static function createFile($path, $content = ""): string {
+    $fullPath = DRUPAL_ROOT . '/' . $path;
+
+    // Extract directory path and file name.
+    $directory = dirname($fullPath);
+
+    // Create directories recursively if they don't exist.
+    if (!is_dir($directory)) {
+      mkdir($directory, 0777, TRUE);
+    }
+
+    try {
+      file_put_contents($fullPath, $content);
+      return "File created: $path";
+    }
+    catch (\Exception $e) {
+      return "Error creating file: " . $e->getMessage();
+    }
+  }
+
+  /**
+   * Writes to a file.
+   *
+   * @param string $path
+   *   The path of the file to write to.
+   * @param string $content
+   *   The content to write to the file.
+   *
+   * @return string
+   *   The result of the file writing.
+   */
+  public static function writeToFile($path, $content): string {
+    $fullPath = DRUPAL_ROOT . '/' . $path;
+
+    try {
+      if (file_exists($fullPath)) {
+        $originalContent = file_get_contents($fullPath);
+        $result = self::generateAndApplyDiff($originalContent, $content, $path);
+      } else {
+        file_put_contents($path, $content);
+        $result = "New file created and content written to: $path";
+      }
+      return $result;
+    }
+    catch (\Exception $e) {
+      return "Error writing to file: " . $e->getMessage();
+    }
+  }
+
+  /**
+   * Reads a file.
+   *
+   * @param string $path
+   *   The path of the file to read.
+   *
+   * @return string
+   *   The content of the file.
+   */
+  public static function readFile($path): string {
+    $fullPath = DRUPAL_ROOT . '/' . $path;
+
+    if (is_dir($fullPath)) {
+      $files = scandir($fullPath);
+      $files = array_diff($files, ['.', '..']);
+      $content = '';
+      foreach ($files as $file) {
+        $filePath = $fullPath . '/' . $file;
+        if (is_file($filePath)) {
+          $content .= file_get_contents($filePath) . "\n";
+        }
+      }
+      return $content;
+    }
+    else {
+      if (file_exists($fullPath)) {
+        try {
+          return file_get_contents($fullPath);
+        }
+        catch (\Exception $e) {
+          return "Error reading file: " . $e->getMessage();
+        }
+      }
+      else {
+        return "File not found: $path";
+      }
+    }
+  }
+
+  /**
+   * Lists files in a directory.
+   *
+   * @param string $path
+   *   The path of the directory to list files in.
+   *
+   * @return string
+   *   The list of files.
+   */
+  public static function listFiles($path = "."): string {
+    // Get the full path relative to the Drupal root directory.
+    $fullPath = DRUPAL_ROOT . '/' . $path;
+
+    try {
+      $files = array_diff(scandir($fullPath), ['.', '..']);
+      return implode("\n", $files);
+    }
+    catch (\Exception $e) {
+      return "Error listing files: " . $e->getMessage();
+    }
+  }
+
+  /**
+   * Encodes an image to base64.
+   *
+   * @param string $imagePath
+   *   The path of the image to encode.
+   *
+   * @return string
+   *   The base64 encoded image.
+   */
+  public static function encodeImageToBase64($imagePath) {
+    try {
+      $img = file_get_contents($imagePath);
+      $base64 = base64_encode($img);
+      return $base64;
+    }
+    catch (\Exception $e) {
+      return "Error encoding image: " . $e->getMessage();
+    }
+  }
+
+  /**
+   * Generates and applies a diff to a file.
+   *
+   * @param string $originalContent
+   *   The original content of the file.
+   * @param string $newContent
+   *   The new content of the file.
+   * @param string $path
+   *   The path of the file.
+   *
+   * @return string
+   *   The result of the diff generation and application.
+   */
+  public static function generateAndApplyDiff($originalContent, $newContent, $path): string {
+    $fullPath = DRUPAL_ROOT . '/' . $path;
+
+    $originalLines = explode("\n", $originalContent);
+    $newLines = explode("\n", $newContent);
+    $diff = [];
+
+    $maxLines = max(count($originalLines), count($newLines));
+    for ($i = 0; $i < $maxLines; $i++) {
+      if (!isset($originalLines[$i]) || !isset($newLines[$i]) || $originalLines[$i] !== $newLines[$i]) {
+        $diff[] = $originalLines[$i] ?? '---' . PHP_EOL . $newLines[$i] ?? '+++';
+      }
+    }
+
+    if (empty($diff)) {
+      return "No changes detected.";
+    }
+
+    try {
+      file_put_contents($fullPath, $newContent);
+      return "Changes applied to $path:\n" . implode('', $diff);
+    }
+    catch (\Exception $e) {
+      return "Error applying changes: " . $e->getMessage();
+    }
+  }
+
+  /**
    * Get Models.
    *
    * @return array
    *   The models.
    */
-  public static function getModels() {
+  public static function getModels(): array {
     return self::$models;
+  }
+
+  /**
+   * Get Chat Tools.
+   *
+   * @return array
+   *   The chat tools.
+   */
+  public static function getChatTools(): array {
+    return self::$tools;
   }
 
   /**
@@ -269,7 +565,7 @@ class DrupalAiHelper {
    * @param array $field_definitions
    *   The field definitions to be added.
    */
-  public static function addFieldDefinitionsToData(&$data, $entity_type, $type_id, $type_label, $field_definitions) {
+  public static function addFieldDefinitionsToData(array &$data, $entity_type, $type_id, $type_label, array $field_definitions) {
     foreach ($field_definitions as $field_name => $field_definition) {
       // Check if the field is custom, or if it is 'title' or 'body'.
       if (

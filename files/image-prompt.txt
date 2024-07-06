@@ -1,1 +1,0 @@
-Generate a very detailed description of this web design image from top to bottom in order for a separate prompt to be able to generate Storybook stories from that description.

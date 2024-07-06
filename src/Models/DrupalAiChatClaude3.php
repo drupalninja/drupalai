@@ -3,8 +3,8 @@
 namespace Drupal\drupalai\Models;
 
 use Drupal\drupalai\DrupalAiChatInterface;
+use Drupal\drupalai\DrupalAiHelper;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
 
 /**
  * Claude3 implementation of DrupalAiChat.
@@ -14,13 +14,15 @@ class DrupalAiChatClaude3 implements DrupalAiChatInterface {
   /**
    * Get Chat.
    *
+   * @param string $systemPrompt
+   *   The system prompt.
    * @param array $messages
    *   The AI messages.
    *
-   * @return string
-   *   The response from the API.
+   * @return object|bool
+   *   The JSON response object from the API.
    */
-  public function chat(array $messages): string {
+  public function chat(string $systemPrompt, array $messages): object|bool {
     $config = \Drupal::config('drupalai.settings');
     $api_key = $config->get('claude3_api_key');
 
@@ -41,24 +43,29 @@ class DrupalAiChatClaude3 implements DrupalAiChatInterface {
           'x-api-key' => $api_key,
         ],
         'json' => [
-          "model" => "claude-3-5-sonnet-20240620",
+          "model" => "claude-3-haiku-20240307",
           "max_tokens" => 4096,
+          'system' => $systemPrompt,
           "messages" => $messages,
+          'tools' => DrupalAiHelper::getChatTools(),
+          'tool_choice' => [
+            'type' => "auto",
+          ],
         ],
       ]);
     }
-    catch (RequestException $e) {
-      \Drupal::logger('drupalai')->error($e->getMessage());
+    catch (\Exception $e) {
+      \Drupal::logger('drupalai')->error('Error calling Claude API: ' . $e->getMessage());
       return FALSE;
     }
 
     if ($response->getStatusCode() != 200) {
-      \Drupal::logger('drupalai')->error($response->getBody()->getContents());
+      \Drupal::logger('drupalai')->error('Error calling Claude API: ' . $response->getStatusCode() . ' ' . $response->getReasonPhrase());
       return FALSE;
     }
     else {
       $data = $response->getBody()->getContents();
-      return json_decode($data)->content[0]->text;
+      return json_decode($data);
     }
   }
 

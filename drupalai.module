@@ -14,28 +14,8 @@ function drupalai_get_prompt($type) {
   $filename = '';
 
   switch ($type) {
-    case 'module':
-      $filename = 'module-prompt.txt';
-      break;
-
-    case 'refactor':
-      $filename = 'refactor-prompt.txt';
-      break;
-
-    case 'block':
-      $filename = 'block-prompt.txt';
-      break;
-
-    case 'story':
-      $filename = 'story-prompt.txt';
-      break;
-
-    case 'stories':
-      $filename = 'stories-prompt.txt';
-      break;
-
-    case 'image':
-      $filename = 'image-prompt.txt';
+    case 'chat':
+      $filename = 'chat-prompt.txt';
       break;
   }
 
