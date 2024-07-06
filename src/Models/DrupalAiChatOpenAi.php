@@ -12,13 +12,6 @@ use GuzzleHttp\Exception\RequestException;
 class DrupalAiChatOpenAi implements DrupalAiChatInterface {
 
   /**
-   * The contents of the request.
-   *
-   * @var array
-   */
-  private $contents = [];
-
-  /**
    * The model to use.
    *
    * @var string
@@ -33,47 +26,18 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
   }
 
   /**
-   * Prepare the request contents.
+   * Get Chat.
    *
-   * @param string $prompt
-   *   The prompt to send to the API.
-   * @param string $image_url
-   *   The image URL to send to the API.
+   * @param string $systemPrompt
+   *   The system prompt.
+   * @param array $messages
+   *   The AI messages.
    *
-   * @return array
-   *   The prepared request contents.
+   * @return object|bool
+   *   The JSON response object from the API.
    */
-  private function prepareRequestContents(string $prompt, string $image_url = ''): array {
-    $contents = [
-      "role" => "user",
-      "content" => [
-        [
-          "type" => "text",
-          "text" => $prompt,
-        ],
-      ],
-    ];
+  public function chat(string $systemPrompt, array $messages): object|bool {
 
-    // Add image URL if provided.
-    if ($image_url) {
-      $contents['content'][] = [
-        "type" => "image_url",
-        "image_url" => [
-          "url" => $image_url,
-        ],
-      ];
-    }
-
-    return $contents;
-  }
-
-  /**
-   * Send request to OpenAI API.
-   *
-   * @return string|bool
-   *   The response from the API or FALSE on failure.
-   */
-  private function sendRequest(): string|bool {
     $config = \Drupal::config('drupalai.settings');
     $api_key = $config->get('openai_api_key');
 
@@ -86,6 +50,16 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
 
     $client = new Client();
 
+    $contents = [
+      "role" => "user",
+      "content" => [
+        [
+          "type" => "text",
+          "text" => $prompt,
+        ],
+      ],
+    ];
+
     try {
       $response = $client->request('POST', $url, [
         'headers' => [
@@ -94,7 +68,7 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
         ],
         'json' => [
           "model" => $this->model,
-          "messages" => $this->contents,
+          "messages" => $contents,
           "temperature" => 1,
           "max_tokens" => 4096,
           "top_p" => 1,
@@ -102,8 +76,7 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
           "presence_penalty" => 0,
         ],
       ]);
-    }
-    catch (RequestException $e) {
+    } catch (RequestException $e) {
       \Drupal::logger('drupalai')->error($e->getMessage());
       return FALSE;
     }
@@ -122,58 +95,6 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
       }
     }
 
-    return $text;
-  }
-
-  /**
-   * Get Chat.
-   *
-   * @param string $prompt
-   *   The prompt to send to the API.
-   * @param string $image_url
-   *   The image URL to send to the API.
-   *
-   * @return string
-   *   The response from the API.
-   */
-  public function getChat(string $prompt, string $image_url = ''): string {
-    $contents = $this->prepareRequestContents($prompt, $image_url);
-    $this->contents[] = $contents;
-
-    $text = $this->sendRequest();
-
-    if ($text) {
-      // Regex to match everything between <files> and </files>.
-      preg_match('/(<files>.*?<\/files>)/s', $text, $matches);
-      $text = $matches[1] ?? '';
-
-      if ($text) {
-        $this->contents[] = [
-          "role" => "assistant",
-          "content" => $text,
-        ];
-      }
-    }
-
-    return $text;
-  }
-
-  /**
-   * Get Image Description.
-   *
-   * @param string $prompt
-   *   The prompt to send to the API.
-   * @param string $image_url
-   *   The image URL to send to the API.
-   *
-   * @return string
-   *   The response from the API.
-   */
-  public function getImageDescription(string $prompt, string $image_url = ''): string {
-    $contents = $this->prepareRequestContents($prompt, $image_url);
-    $this->contents[] = $contents;
-
-    return $this->sendRequest();
   }
 
 }

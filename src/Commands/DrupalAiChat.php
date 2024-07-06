@@ -69,7 +69,6 @@ class DrupalAiChat extends DrushCommands {
     $this->continuationExitPhrase = 'AUTOMODE_COMPLETE';
     $this->maxContinuationIterations = 25;
     $this->systemPrompt = drupalai_get_prompt('chat');
-    $this->model = DrupalAiFactory::build('claude3');
   }
 
   /**
@@ -86,6 +85,10 @@ class DrupalAiChat extends DrushCommands {
     $this->printColored("Type 'image' to include an image in your message.", self::CLAUDE_COLOR, FALSE);
     $this->printColored("Type 'automode [number]' to enter Autonomous mode with a specific number of iterations.", self::CLAUDE_COLOR, FALSE);
     $this->printColored("While in automode, press Ctrl+C at any time to exit the automode to return to regular chat.", self::CLAUDE_COLOR, FALSE);
+
+    // Prompt the user to select the model type.
+    $model = $this->io()->choice('Select the model type', DrupalAiHelper::getModels(), 0);
+    $this->model = DrupalAiFactory::build($model);
 
     while (TRUE) {
       $userInput = $this->io()->ask(self::USER_COLOR . "You");
@@ -107,7 +110,7 @@ class DrupalAiChat extends DrushCommands {
 
         if (file_exists($imagePath)) {
           $userInput = $this->io()->ask(self::USER_COLOR . "You (prompt for image)");
-          [$response] = $this->chatWithClaude($userInput, $imagePath);
+          [$response] = $this->chatWithModel($userInput, $imagePath);
           $this->processAndDisplayResponse($response);
         }
         else {
@@ -127,7 +130,7 @@ class DrupalAiChat extends DrushCommands {
 
         try {
           while ($this->automode && $iterationCount < $maxIterations) {
-            [$response, $exitContinuation] = $this->chatWithClaude($userInput, NULL, $iterationCount + 1, $maxIterations);
+            [$response, $exitContinuation] = $this->chatWithModel($userInput, NULL, $iterationCount + 1, $maxIterations);
             $this->processAndDisplayResponse($response);
 
             if ($exitContinuation || strpos($response, $this->continuationExitPhrase) !== FALSE) {
@@ -151,15 +154,13 @@ class DrupalAiChat extends DrushCommands {
           $this->printColored("\nAutomode interrupted by user. Exiting automode.", self::TOOL_COLOR);
           $this->automode = FALSE;
           if (end($this->conversationHistory)['role'] == "user") {
-            $this->conversationHistory[] = [
-              "role" => "assistant",
-              "content" => "Automode interrupted. How can I assist you further?",
-            ];
+            // Add the assistant message to the conversation history.
+            $this->conversationHistory[] = $this->model->createAssistantMessage("Automode interrupted. How can I assist you further?");
           }
         }
       }
       else {
-        [$response] = $this->chatWithClaude($userInput);
+        [$response] = $this->chatWithModel($userInput);
         $this->processAndDisplayResponse($response);
       }
     }
@@ -222,7 +223,7 @@ class DrupalAiChat extends DrushCommands {
    * @return string
    *   The result of the tool execution.
    */
-  protected function executeTool($toolName, object $toolInput) {
+  protected function executeTool($toolName, object $toolInput): string {
     switch ($toolName) {
       case 'create_files':
         $results = [];
@@ -274,7 +275,7 @@ class DrupalAiChat extends DrushCommands {
    * @return array
    *   The assistant response and the exit continuation status.
    */
-  protected function chatWithClaude($userInput, $imagePath = NULL, $currentIteration = NULL, $maxIterations = NULL) {
+  protected function chatWithModel($userInput, $imagePath = NULL, $currentIteration = NULL, $maxIterations = NULL) {
     if ($imagePath) {
       $this->printColored("Processing image at path: $imagePath", self::TOOL_COLOR);
       $imageBase64 = DrupalAiHelper::encodeImageToBase64($imagePath);
@@ -286,32 +287,14 @@ class DrupalAiChat extends DrushCommands {
         ];
       }
 
-      $imageMessage = [
-        "role" => "user",
-        "content" => [
-          [
-            "type" => "image",
-            "source" => [
-              "type" => "base64",
-              "media_type" => "image/jpeg",
-              "data" => $imageBase64,
-            ]
-          ],
-          [
-            "type" => "text",
-            "text" => "User input for image: $userInput",
-          ]
-        ]
-      ];
+      // Add the image message to the conversation history.
+      $this->conversationHistory[] = $this->model->createImageMessage($imageBase64, $userInput);
 
-      $this->conversationHistory[] = $imageMessage;
       $this->printColored("Image message added to conversation history", self::TOOL_COLOR);
     }
     else {
-      $this->conversationHistory[] = [
-        "role" => "user",
-        "content" => $userInput,
-      ];
+      // Add the user input message to the conversation history.
+      $this->conversationHistory[] = $this->model->createUserInputMessage($userInput);
     }
 
     $systemPrompt = $this->updateSystemPrompt($currentIteration, $maxIterations);
@@ -347,28 +330,11 @@ class DrupalAiChat extends DrushCommands {
 
         $this->printColored("Tool Result: $result", self::RESULT_COLOR);
 
-        $this->conversationHistory[] = [
-          "role" => "assistant",
-          "content" => [
-            [
-              "type" => "tool_use",
-              "id" => $toolUseId,
-              "name" => $toolName,
-              "input" => $toolInput,
-            ],
-          ],
-        ];
+        // Add the tool use message to the conversation history.
+        $this->conversationHistory[] = $this->model->createToolUseMessage($toolUseId, $toolName, $toolInput);
 
-        $this->conversationHistory[] = [
-          "role" => "user",
-          "content" => [
-            [
-              "type" => "tool_result",
-              "tool_use_id" => $toolUseId,
-              "content" => $result,
-            ],
-          ],
-        ];
+        // Add the tool result message to the conversation history.
+        $this->conversationHistory[] = $this->model->createToolResultMessage($toolUseId, $result);
 
         $messages = $this->conversationHistory;
         $data = $this->model->chat($systemPrompt, $messages);
@@ -389,10 +355,8 @@ class DrupalAiChat extends DrushCommands {
     }
 
     if ($assistantResponse) {
-      $this->conversationHistory[] = [
-        "role" => "assistant",
-        "content" => $assistantResponse,
-      ];
+      // Add the assistant message to the conversation history.
+      $this->conversationHistory[] = $this->model->createAssistantMessage($assistantResponse);
     }
 
     return [$assistantResponse, $exitContinuation];

@@ -16,13 +16,13 @@ class DrupalAiHelper {
    * @var array
    */
   protected static $models = [
-    'gpt-4o' => 'ChatGPT-4o',
-    'gpt-3.5-turbo-0125' => 'ChatGPT 3.5 Turbo',
-    'gemini' => 'Gemini',
+    //'gpt-4o' => 'ChatGPT-4o',
+    // 'gpt-3.5-turbo-0125' => 'ChatGPT 3.5 Turbo',
+    // 'gemini' => 'Gemini',
     'claude3' => 'Claude 3',
-    'llama3' => 'Llama 3:7b (ollama)',
-    'codellama' => 'Codellama:7b (ollama)',
-    'codegemma:7b' => 'Codegemma:7b (ollama)',
+    // 'llama3' => 'Llama 3:7b (ollama)',
+    // 'codellama' => 'Codellama:7b (ollama)',
+    // 'codegemma:7b' => 'Codegemma:7b (ollama)',
   ];
 
   /**
@@ -179,7 +179,8 @@ class DrupalAiHelper {
       if (file_exists($fullPath)) {
         $originalContent = file_get_contents($fullPath);
         $result = self::generateAndApplyDiff($originalContent, $content, $path);
-      } else {
+      }
+      else {
         file_put_contents($path, $content);
         $result = "New file created and content written to: $path";
       }

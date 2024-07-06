@@ -69,4 +69,118 @@ class DrupalAiChatClaude3 implements DrupalAiChatInterface {
     }
   }
 
+  /**
+   * Create an image message for Claude.
+   *
+   * @param string $imageBase64
+   *   The base64 encoded image data.
+   * @param string $userInput
+   *   The user input.
+   *
+   * @return array
+   *   The message array.
+   */
+  public function createImageMessage(string $imageBase64, string $userInput): array {
+    return [
+      "role" => "user",
+      "content" => [
+        [
+          "type" => "image",
+          "source" => [
+            "type" => "base64",
+            "media_type" => "image/jpeg",
+            "data" => $imageBase64,
+          ]
+        ],
+        [
+          "type" => "text",
+          "text" => "User input for image: $userInput",
+        ],
+      ],
+    ];
+  }
+
+  /**
+   * Create a user input message for Claude.
+   *
+   * @param string $userInput
+   *   The user input.
+   *
+   * @return array
+   *   The message array.
+   */
+  public function createUserInputMessage(string $userInput): array {
+    return [
+      "role" => "user",
+      "content" => $userInput,
+    ];
+  }
+
+  /**
+   * Create an assistant message for Claude.
+   *
+   * @param string $assistantResponse
+   *   The assistant response.
+   *
+   * @return array
+   *   The message array.
+   */
+  public function createAssistantMessage(string $assistantResponse): array {
+    return [
+      "role" => "assistant",
+      "content" => $assistantResponse,
+    ];
+  }
+
+  /**
+   * Create a tool result message for Claude.
+   *
+   * @param string $toolUseId
+   *   The tool use ID.
+   * @param string $result
+   *   The tool result.
+   *
+   * @return array
+   *   The message array.
+   */
+  public function createToolResultMessage(string $toolUseId, string $result): array {
+    return [
+      "role" => "user",
+      "content" => [
+        [
+          "type" => "tool_result",
+          "tool_use_id" => $toolUseId,
+          "content" => $result,
+        ],
+      ],
+    ];
+  }
+
+  /**
+   * Create a tool use message for Claude.
+   *
+   * @param string $toolUseId
+   *   The tool use ID.
+   * @param string $toolName
+   *   The tool name.
+   * @param object $toolInput
+   *   The tool input.
+   *
+   * @return array
+   *   The message array.
+   */
+  public function createToolUseMessage(string $toolUseId, string $toolName, object $toolInput): array {
+    return [
+      "role" => "assistant",
+      "content" => [
+        [
+          "type" => "tool_use",
+          "id" => $toolUseId,
+          "name" => $toolName,
+          "input" => $toolInput,
+        ],
+      ],
+    ];
+  }
+
 }
