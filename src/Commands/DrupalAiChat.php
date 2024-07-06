@@ -194,9 +194,7 @@ class DrupalAiChat extends DrushCommands {
     When an image is provided, carefully analyze its contents and incorporate your observations into your responses.
 
     When asked to create files:
-    - Always ask the user for the path where they would like to create the files.
     - Use the create_files tool to create new files at the specified path with content.
-    - Do not use create_files without first telling the user the files you are creating and their contents and asking to proceed.
 
     When asked to make edits or improvements:
     - Use the read_file tool to examine the contents of existing files.
@@ -238,7 +236,7 @@ class DrupalAiChat extends DrushCommands {
    *   Starts the chat with the Claude AI.
    */
   public function chatStart() {
-    $this->printColored("Welcome to the Claude-3.5-Sonnet DrupalAI Chat with Image Support!", self::CLAUDE_COLOR);
+    $this->printColored("Welcome to DrupalAI Chat with Image Support!", self::CLAUDE_COLOR);
     $this->printColored("Type 'exit' to end the conversation.", self::CLAUDE_COLOR);
     $this->printColored("Type 'image' to include an image in your message.", self::CLAUDE_COLOR);
     $this->printColored("Type 'automode [number]' to enter Autonomous mode with a specific number of iterations.", self::CLAUDE_COLOR);
@@ -486,11 +484,16 @@ class DrupalAiChat extends DrushCommands {
       return $content;
     }
     else {
-      try {
-        return file_get_contents($fullPath);
+      if (file_exists($fullPath)) {
+        try {
+          return file_get_contents($fullPath);
+        }
+        catch (\Exception $e) {
+          return "Error reading file: " . $e->getMessage();
+        }
       }
-      catch (\Exception $e) {
-        return "Error reading file: " . $e->getMessage();
+      else {
+        return "File not found: $path";
       }
     }
   }
@@ -574,12 +577,15 @@ class DrupalAiChat extends DrushCommands {
       case 'create_files':
         $results = [];
 
-        print_r($toolInput);
-
-        foreach ($toolInput->files as $file) {
-          $results[] = $this->createFile($file->path, $file->content ?? '');
+        if (is_array($toolInput->files)) {
+          foreach ($toolInput->files as $file) {
+            $results[] = $this->createFile($file->path, $file->content ?? '');
+          }
+          return implode("\n", $results);
         }
-        return implode("\n", $results);
+        else {
+          return "Invalid input for create_files tool.";
+        }
 
       case 'write_to_file':
         return $this->writeToFile($toolInput->path, $toolInput->content);
