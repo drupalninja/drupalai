@@ -83,7 +83,7 @@ class DrupalAiChat extends DrushCommands {
                 ],
                 "content" => [
                   "type" => "string",
-                  "description" => "The contents of the file.",
+                  "description" => "The contents of the file. Do not use literal block scalar (|) for content.",
                 ],
               ],
               "required" => [
@@ -195,6 +195,7 @@ class DrupalAiChat extends DrushCommands {
 
     When asked to create files:
     - Use the create_files tool to create new files at the specified path with content.
+    - Do not use literal block scalar (|) for content, as it may cause issues with the API.
 
     When asked to make edits or improvements:
     - Use the read_file tool to examine the contents of existing files.
@@ -223,7 +224,7 @@ class DrupalAiChat extends DrushCommands {
     4. ALWAYS READ A FILE BEFORE EDITING IT IF YOU ARE MISSING CONTENT. Provide regular updates on your progress
     5. IMPORTANT RULe!! When you know your goals are completed, DO NOT CONTINUE IN POINTLESS BACK AND FORTH CONVERSATIONS with yourself, if you think we achieved the results established to the original request say "AUTOMODE_COMPLETE" in your response to exit the loop!
     6. ULTRA IMPORTANT! You have access to this {iteration_info} amount of iterations you have left to complete the request, you can use this information to make decisions and to provide updates on your progress knowing the amount of responses you have left to complete the request.
-    Answer the user's request using relevant tools (if they are available). Before calling a tool, do some analysis within <thinking></thinking> tags. First, think about which of the provided tools is the relevant tool to answer the user's request. Second, go through each of the required parameters of the relevant tool and determine if the user has directly provided or given enough information to infer a value. When deciding if the parameter can be inferred, carefully consider all the context to see if it supports a specific value. If all of the required parameters are present or can be reasonably inferred, close the thinking tag and proceed with the tool call. BUT, if one of the values for a required parameter is missing, DO NOT invoke the function (not even with fillers for the missing params) and instead, ask the user to provide the missing parameters. DO NOT ask for more information on optional parameters if it is not provided.
+    Answer the user's request using relevant tools (if they are available). Before calling a tool, do some analysis. First, think about which of the provided tools is the relevant tool to answer the user's request. Second, go through each of the required parameters of the relevant tool and determine if the user has directly provided or given enough information to infer a value. When deciding if the parameter can be inferred, carefully consider all the context to see if it supports a specific value. If all of the required parameters are present or can be reasonably inferred, close the thinking tag and proceed with the tool call. BUT, if one of the values for a required parameter is missing, DO NOT invoke the function (not even with fillers for the missing params) and instead, ask the user to provide the missing parameters. DO NOT ask for more information on optional parameters if it is not provided.
     EOT;
   }
 
@@ -236,15 +237,15 @@ class DrupalAiChat extends DrushCommands {
    *   Starts the chat with the Claude AI.
    */
   public function chatStart() {
-    $this->printColored("Welcome to DrupalAI Chat with Image Support!", self::CLAUDE_COLOR);
-    $this->printColored("Type 'exit' to end the conversation.", self::CLAUDE_COLOR);
-    $this->printColored("Type 'image' to include an image in your message.", self::CLAUDE_COLOR);
-    $this->printColored("Type 'automode [number]' to enter Autonomous mode with a specific number of iterations.", self::CLAUDE_COLOR);
-    $this->printColored("While in automode, press Ctrl+C at any time to exit the automode to return to regular chat.", self::CLAUDE_COLOR);
+
+    $this->printColored("Welcome to DrupalAI Chat with Image Support!", self::CLAUDE_COLOR, FALSE);
+    $this->printColored("Type 'exit' to end the conversation.", self::CLAUDE_COLOR, FALSE);
+    $this->printColored("Type 'image' to include an image in your message.", self::CLAUDE_COLOR, FALSE);
+    $this->printColored("Type 'automode [number]' to enter Autonomous mode with a specific number of iterations.", self::CLAUDE_COLOR, FALSE);
+    $this->printColored("While in automode, press Ctrl+C at any time to exit the automode to return to regular chat.", self::CLAUDE_COLOR, FALSE);
 
     while (TRUE) {
-      echo "\n" . self::USER_COLOR . "You: ";
-      $userInput = trim(fgets(STDIN));
+      $userInput = $this->io()->ask(self::USER_COLOR . "You");
 
       if (trim($userInput) == '') {
         // Tell the user to enter something.
@@ -258,13 +259,11 @@ class DrupalAiChat extends DrushCommands {
       }
 
       if (strtolower($userInput) == 'image') {
-        echo self::USER_COLOR . "Drag and drop your image here: ";
-        $imagePath = trim(fgets(STDIN));
+        $imagePath = $this->io()->ask(self::USER_COLOR . "Drag and drop your image here");
         $imagePath = str_replace("'", "", $imagePath);
 
         if (file_exists($imagePath)) {
-          echo self::USER_COLOR . "You (prompt for image): ";
-          $userInput = trim(fgets(STDIN));
+          $userInput = $this->io()->ask(self::USER_COLOR . "You (prompt for image)");
           [$response] = $this->chatWithClaude($userInput, $imagePath);
           $this->processAndDisplayResponse($response);
         }
@@ -280,8 +279,7 @@ class DrupalAiChat extends DrushCommands {
         $this->printColored("Entering automode with $maxIterations iterations. Press Ctrl+C to exit automode at any time.", self::TOOL_COLOR);
         $this->printColored("Press Ctrl+C at any time to exit the automode loop.", self::TOOL_COLOR);
 
-        echo "\n" . self::USER_COLOR . "You: ";
-        $userInput = trim(fgets(STDIN));
+        $userInput = $this->io()->ask(self::USER_COLOR . "You");
         $iterationCount = 0;
 
         try {
@@ -353,9 +351,11 @@ class DrupalAiChat extends DrushCommands {
    *   The text to print.
    * @param string $color
    *   The color of the text.
+   * @param bool $newLine
+   *   Whether to add a new line.
    */
-  protected function printColored($text, $color) {
-    $this->output()->writeln($color . $text . " ");
+  protected function printColored($text, $color, $newLine = TRUE) {
+    $this->output()->writeln($color . $text . ($newLine ? "\n" : " "));
   }
 
   /**
@@ -539,15 +539,20 @@ class DrupalAiChat extends DrushCommands {
       $client = new Client();
 
       $response = $client->request('POST', $url, [
-        'api_key' => $api_key,
-        'query' => $query,
-        'search_depth' => 'basic',
-        'include_answer' => FALSE,
-        'include_images' => TRUE,
-        'include_raw_content' => FALSE,
-        'max_results' => 5,
-        'include_domains' => [],
-        'exclude_domains' => [],
+        'headers' => [
+          'content-type' => 'application/json',
+        ],
+        'json' => [
+          'api_key' => $api_key,
+          'query' => $query,
+          'search_depth' => 'basic',
+          'include_answer' => FALSE,
+          'include_images' => TRUE,
+          'include_raw_content' => FALSE,
+          'max_results' => 5,
+          'include_domains' => [],
+          'exclude_domains' => [],
+        ],
       ]);
 
       if ($response->getStatusCode() == 200) {
@@ -581,7 +586,7 @@ class DrupalAiChat extends DrushCommands {
           foreach ($toolInput->files as $file) {
             $results[] = $this->createFile($file->path, $file->content ?? '');
           }
-          return implode("\n", $results);
+          return "\n" . implode("\n", $results);
         }
         else {
           return "Invalid input for create_files tool.";
@@ -841,8 +846,8 @@ class DrupalAiChat extends DrushCommands {
           else {
             $lines = explode("\n", $part);
             $code = implode("\n", array_slice($lines, 1));
-            if ($code) {
-              $this->printColored("Code:\n$code", self::CLAUDE_COLOR);
+            if (trim($code)) {
+              $this->printColored("Code:\n$code", self::RESULT_COLOR);
             }
             else {
               $this->printColored($part, self::CLAUDE_COLOR);
