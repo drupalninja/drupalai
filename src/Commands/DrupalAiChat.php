@@ -593,7 +593,12 @@ class DrupalAiChat extends DrushCommands {
         }
 
       case 'write_to_file':
-        return $this->writeToFile($toolInput->path, $toolInput->content);
+        if (!empty($toolInput->path) && !empty($toolInput->content)) {
+          return $this->writeToFile($toolInput->path, $toolInput->content);
+        }
+        else {
+          return "Invalid input for write_to_file tool.";
+        }
 
       case 'read_file':
         return $this->readFile($toolInput->path);
