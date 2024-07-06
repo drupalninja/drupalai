@@ -182,7 +182,8 @@ class DrupalAiChat extends DrushCommands {
 
     // System prompt.
     $this->systemPrompt = <<<EOT
-    You are Claude, an AI assistant powered by Anthropic's Claude-3.5-Sonnet model. You are an exceptional software developer with vast knowledge across multiple programming languages, frameworks, and best practices. Your capabilities include:
+    You are Claude, an AI assistant powered by Anthropic's Claude-3.5-Sonnet model.
+    You are an exceptional Drupal 10 developer with vast knowledge across multiple programming languages, frameworks, and best practices. Your capabilities include:
 
     1. Creating project structures, including folders and files
     2. Writing clean, efficient, and well-documented code
@@ -208,7 +209,7 @@ class DrupalAiChat extends DrushCommands {
     - Analyze the code and suggest improvements or make necessary edits.
     - Use the write_to_file tool to implement changes, providing the full updated file content.
 
-    Be sure to consider the type of project (e.g., Python, JavaScript, web application) when determining the appropriate structure and files to include.
+    Be sure to consider the type of project (e.g., PHP, JavaScript, web application) when determining the appropriate structure and files to include.
 
     You can now read files, list the contents of the root folder where this script is being run, and perform web searches. Use these capabilities when:
     - The user asks for edits or improvements to existing files
@@ -690,7 +691,7 @@ class DrupalAiChat extends DrushCommands {
           'x-api-key' => $api_key,
         ],
         'json' => [
-          "model" => "claude-3-5-sonnet-20240620",
+          "model" => "claude-3-haiku-20240307",
           "max_tokens" => 4096,
           'system' => $this->updateSystemPrompt($currentIteration, $maxIterations),
           "messages" => $messages,
@@ -713,6 +714,8 @@ class DrupalAiChat extends DrushCommands {
     $exitContinuation = FALSE;
 
     $data = json_decode($response->getBody()->getContents());
+
+    print_r($data->content);
 
     foreach ($data->content as $contentBlock) {
       if ($contentBlock->type == "text") {
@@ -776,7 +779,7 @@ class DrupalAiChat extends DrushCommands {
               'x-api-key' => $api_key,
             ],
             'json' => [
-              "model" => "claude-3-5-sonnet-20240620",
+              "model" => "claude-3-haiku-20240307",
               "max_tokens" => 4096,
               'system' => $this->updateSystemPrompt($currentIteration, $maxIterations),
               "messages" => $messages,
@@ -788,6 +791,7 @@ class DrupalAiChat extends DrushCommands {
           ]);
 
           $data = json_decode($toolResponse->getBody()->getContents());
+          print_r($data->content);
 
           foreach ($data->content as $toolContentBlock) {
             if ($toolContentBlock->type == "text") {
