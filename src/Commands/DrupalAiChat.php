@@ -67,60 +67,34 @@ class DrupalAiChat extends DrushCommands {
    */
   protected $tools = [
     [
-      "name" => "create_folder",
-      "description" => "Create a new folder at the specified path. Use this when you need to create a new directory in the project structure.",
+      "name" => "create_files",
+      "description" => "Create new files at the specified path with content. Use this when you need to create new files in the project structure.",
       "input_schema" => [
         "type" => "object",
         "properties" => [
-          "path" => [
-            "type" => "string",
-            "description" => "The path where the folder should be created",
-          ]
-        ],
-        "required" => [
-          "path",
-        ],
-      ],
-    ],
-    [
-      "name" => "create_file",
-      "description" => "Create a new file at the specified path with optional content. Use this when you need to create a new file in the project structure.",
-      "input_schema" => [
-        "type" => "object",
-        "properties" => [
-          "path" => [
-            "type" => "string",
-            "description" => "The path where the file should be created",
-          ],
-          "content" => [
-            "type" => "string",
-            "description" => "The initial content of the file (optional)",
-          ]
-        ],
-        "required" => [
-          "path",
-        ],
-      ],
-    ],
-    [
-      "name" => "write_to_file",
-      "description" => "Write content to a file at the specified path. If the file exists, only the necessary changes will be applied. If the file doesn't exist, it will be created. Always provide the full intended content of the file.",
-      "input_schema" => [
-        "type" => "object",
-        "properties" => [
-          "path" => [
-            "type" => "string",
-            "description" => "The path of the file to write to",
-          ],
-          "content" => [
-            "type" => "string",
-            "description" => "The full content to write to the file",
+          "files" => [
+            "type" => "array",
+            "items" => [
+              "type" => "object",
+              "properties" => [
+                "path" => [
+                  "type" => "string",
+                  "description" => "The path of the file.",
+                ],
+                "content" => [
+                  "type" => "string",
+                  "description" => "The contents of the file.",
+                ],
+              ],
+              "required" => [
+                "path",
+                "content",
+              ],
+            ],
+            "description" => "An array of files with their properties.",
           ],
         ],
-        "required" => [
-          "path",
-          "content",
-        ],
+        "required" => ["files"],
       ],
     ],
     [
@@ -131,7 +105,7 @@ class DrupalAiChat extends DrushCommands {
         "properties" => [
           "path" => [
             "type" => "string",
-            "description" => "The path of the file to read",
+            "description" => "The path of the file to read relative to a Drupal root directory.",
           ],
         ],
         "required" => [
@@ -141,13 +115,13 @@ class DrupalAiChat extends DrushCommands {
     ],
     [
       "name" => "list_files",
-      "description" => "List all files and directories in the root folder where the script is running. Use this when you need to see the contents of the current directory.",
+      "description" => "List all files and directories for a path relative to the Drupal root directory. Use this when you need to see the contents of the current directory.",
       "input_schema" => [
         "type" => "object",
         "properties" => [
           "path" => [
             "type" => "string",
-            "description" => "The path of the folder to list (default: current directory)",
+            "description" => "The path of the folder to list files in.",
           ],
         ],
       ],
@@ -206,6 +180,7 @@ class DrupalAiChat extends DrushCommands {
 
     When asked to make edits or improvements:
     - Use the read_file tool to examine the contents of existing files.
+    - Before reading a file ask me for the file path relative to the Drupal root directory.
     - Analyze the code and suggest improvements or make necessary edits.
     - Use the write_to_file tool to implement changes, providing the full updated file content.
 
@@ -360,29 +335,6 @@ class DrupalAiChat extends DrushCommands {
   }
 
   /**
-   * Creates a folder.
-   *
-   * @param string $path
-   *   The path of the folder to create.
-   *
-   * @return string
-   *   The result of the folder creation.
-   */
-  protected function createFolder($path) {
-    $fullPath = $this->baseFilePath . '/' . $path;
-
-    try {
-      if (!file_exists($fullPath)) {
-        mkdir($fullPath, 0777, TRUE);
-      }
-      return "Folder created: $path";
-    }
-    catch (\Exception $e) {
-      return "Error creating folder: " . $e->getMessage();
-    }
-  }
-
-  /**
    * Creates a file.
    *
    * @param string $path
@@ -396,6 +348,14 @@ class DrupalAiChat extends DrushCommands {
   protected function createFile($path, $content = "") {
     $fullPath = $this->baseFilePath . '/' . $path;
 
+    // Extract directory path and file name.
+    $directory = dirname($fullPath);
+
+    // Create directories recursively if they don't exist.
+    if (!is_dir($directory)) {
+      mkdir($directory, 0777, TRUE);
+    }
+
     try {
       file_put_contents($fullPath, $content);
       return "File created: $path";
@@ -404,6 +364,7 @@ class DrupalAiChat extends DrushCommands {
       return "Error creating file: " . $e->getMessage();
     }
   }
+
 
   /**
    * Generates and applies a diff to a file.
@@ -419,7 +380,7 @@ class DrupalAiChat extends DrushCommands {
    *   The result of the diff generation and application.
    */
   protected function generateAndApplyDiff($originalContent, $newContent, $path) {
-    $fullPath = $this->baseFilePath . '/' . $path;
+    $fullPath = DRUPAL_ROOT . '/' . $path;
 
     $originalLines = explode("\n", $originalContent);
     $newLines = explode("\n", $newContent);
@@ -446,36 +407,6 @@ class DrupalAiChat extends DrushCommands {
   }
 
   /**
-   * Writes to a file.
-   *
-   * @param string $path
-   *   The path of the file to write to.
-   * @param string $content
-   *   The content to write to the file.
-   *
-   * @return string
-   *   The result of the file writing.
-   */
-  protected function writeToFile($path, $content) {
-    $fullPath = $this->baseFilePath . '/' . $path;
-
-    try {
-      if (file_exists($fullPath)) {
-        $originalContent = file_get_contents($fullPath);
-        $result = $this->generateAndApplyDiff($originalContent, $content, $path);
-      }
-      else {
-        file_put_contents($path, $content);
-        $result = "New file created and content written to: $path";
-      }
-      return $result;
-    }
-    catch (\Exception $e) {
-      return "Error writing to file: " . $e->getMessage();
-    }
-  }
-
-  /**
    * Reads a file.
    *
    * @param string $path
@@ -485,7 +416,7 @@ class DrupalAiChat extends DrushCommands {
    *   The content of the file.
    */
   protected function readFile($path) {
-    $fullPath = $this->baseFilePath . '/' . $path;
+    $fullPath = DRUPAL_ROOT . '/' . $path;
 
     try {
       return file_get_contents($fullPath);
@@ -505,7 +436,8 @@ class DrupalAiChat extends DrushCommands {
    *   The list of files.
    */
   protected function listFiles($path = ".") {
-    $fullPath = $this->baseFilePath . '/' . $path;
+    // Get the full path relative to the Drupal root directory.
+    $fullPath = \Drupal::service('app.root') . '/' . $path;
 
     try {
       $files = array_diff(scandir($fullPath), ['.', '..']);
@@ -570,14 +502,12 @@ class DrupalAiChat extends DrushCommands {
    */
   protected function executeTool($toolName, object $toolInput) {
     switch ($toolName) {
-      case 'create_folder':
-        return $this->createFolder($toolInput->path);
-
-      case 'create_file':
-        return $this->createFile($toolInput->path, $toolInput->content ?? '');
-
-      case 'write_to_file':
-        return $this->writeToFile($toolInput->path, $toolInput->content);
+      case 'create_files':
+        $results = [];
+        foreach ($toolInput->files as $file) {
+          $results[] = $this->createFile($file->path, $file->content ?? '');
+        }
+        return implode("\n", $results);
 
       case 'read_file':
         return $this->readFile($toolInput->path);
@@ -682,8 +612,6 @@ class DrupalAiChat extends DrushCommands {
     $client = new Client();
 
     try {
-      print_r($messages);
-
       $response = $client->request('POST', $url, [
         'headers' => [
           'content-type' => 'application/json',
@@ -715,8 +643,6 @@ class DrupalAiChat extends DrushCommands {
 
     $data = json_decode($response->getBody()->getContents());
 
-    print_r($data->content);
-
     foreach ($data->content as $contentBlock) {
       if ($contentBlock->type == "text") {
         $assistantResponse .= $contentBlock->text . " ";
@@ -730,7 +656,6 @@ class DrupalAiChat extends DrushCommands {
         $toolUseId = $contentBlock->id;
 
         $this->printColored("Tool Used: $toolName", self::TOOL_COLOR);
-        $this->printColored("Tool Input: " . json_encode($toolInput), self::TOOL_COLOR);
 
         $result = $this->executeTool($toolName, $toolInput);
 
@@ -791,7 +716,6 @@ class DrupalAiChat extends DrushCommands {
           ]);
 
           $data = json_decode($toolResponse->getBody()->getContents());
-          print_r($data->content);
 
           foreach ($data->content as $toolContentBlock) {
             if ($toolContentBlock->type == "text") {
