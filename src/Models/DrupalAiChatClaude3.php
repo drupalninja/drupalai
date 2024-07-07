@@ -18,11 +18,13 @@ class DrupalAiChatClaude3 implements DrupalAiChatInterface {
    *   The system prompt.
    * @param array $messages
    *   The AI messages.
+   * @param string $toolChoice
+   *   The tool choice.
    *
    * @return object|bool
    *   The JSON response object from the API.
    */
-  public function chat(string $systemPrompt, array $messages): object|bool {
+  public function chat(string $systemPrompt, array $messages, string $toolChoice = 'auto'): object|bool {
     $config = \Drupal::config('drupalai.settings');
     $api_key = $config->get('claude3_api_key');
 
@@ -49,7 +51,7 @@ class DrupalAiChatClaude3 implements DrupalAiChatInterface {
           "messages" => $messages,
           'tools' => DrupalAiHelper::getChatTools(),
           'tool_choice' => [
-            'type' => "auto",
+            'type' => $toolChoice,
           ],
         ],
       ]);

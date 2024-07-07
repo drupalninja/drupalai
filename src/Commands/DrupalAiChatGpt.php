@@ -291,14 +291,24 @@ class DrupalAiChatGpt extends DrushCommands {
       $this->printColored("Image message added to conversation history", self::TOOL_COLOR);
     }
     else {
+      $tool = NULL;
+
+      // Check if the user input is a command to write to a file.
+      if (preg_match('/^(add|edit|update|change|modify)\s/i', $userInput)) {
+        $userInput .= " (write_to_file)";
+        $tool = 'write_to_file';
+      }
+
       // Add the user input message to the conversation history.
-      $this->conversationHistory[] = $this->model->createUserInputMessage($userInput);
+      $this->conversationHistory[] = $this->model->createUserInputMessage($userInput, $tool);
     }
 
     $systemPrompt = $this->updateSystemPrompt($currentIteration, $maxIterations);
     $messages = $this->conversationHistory;
 
     $data = $this->model->chat($systemPrompt, $messages);
+
+    print_r($data);
 
     if (!$data) {
       return [
