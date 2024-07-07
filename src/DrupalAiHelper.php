@@ -218,7 +218,7 @@ class DrupalAiHelper {
     else {
       if (file_exists($fullPath)) {
         try {
-          return file_get_contents($fullPath);
+          return "\n" . file_get_contents($fullPath);
         }
         catch (\Exception $e) {
           return "Error reading file: " . $e->getMessage();
@@ -245,7 +245,7 @@ class DrupalAiHelper {
 
     try {
       $files = array_diff(scandir($fullPath), ['.', '..']);
-      return implode("\n", $files);
+      return "\n" . implode("\n", $files);
     }
     catch (\Exception $e) {
       return "Error listing files: " . $e->getMessage();

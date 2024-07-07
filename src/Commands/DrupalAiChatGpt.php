@@ -322,9 +322,13 @@ class DrupalAiChatGpt extends DrushCommands {
 
         $result = $this->executeTool($toolName, $toolInput);
 
-        $this->printColored("Tool Result: $result", self::RESULT_COLOR);
+        $this->printColored("Tool Result: $result", self::RESULT_COLOR, FALSE);
 
+        // Add the tool use message to the conversation history.
         $this->conversationHistory[] = $this->model->createToolUseMessage($toolId, $toolName, $toolInput);
+
+        // Add the tool result message to the conversation history.
+        $this->conversationHistory[] = $this->model->createToolResultMessage($toolId, $result);
       }
 
       $messages = $this->conversationHistory;

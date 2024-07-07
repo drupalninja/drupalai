@@ -122,7 +122,7 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
   }
 
   /**
-   * Create a tool result message (Not used for OpenAI).
+   * Create a tool result message for OpenAI.
    *
    * @param string $toolUseId
    *   The tool use ID.
@@ -133,7 +133,10 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
    *   The message array.
    */
   public function createToolResultMessage(string $toolUseId, string $result): array {
-    return [];
+    return [
+      "role" => "user",
+      "content" => $result,
+    ];
   }
 
   /**
