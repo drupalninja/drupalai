@@ -8,7 +8,7 @@ use Drush\Commands\DrushCommands;
 use GuzzleHttp\Client;
 
 /**
- * Defines a command to start a chat with the Claude AI.
+ * Defines a command to start a chat with an AI Chat.
  *
  * @package Drupal\drupalai\Commands
  */
@@ -16,7 +16,7 @@ class DrupalAiChat extends DrushCommands {
 
   // Define colors.
   const USER_COLOR = "\e[37m";
-  const CLAUDE_COLOR = "\e[34m";
+  const MODEL_COLOR = "\e[34m";
   const TOOL_COLOR = "\e[33m";
   const RESULT_COLOR = "\e[32m";
 
@@ -77,14 +77,14 @@ class DrupalAiChat extends DrushCommands {
    * @command drupaai:chatStart
    * @aliases ai-chat
    * @usage drupaai:chatStart
-   *   Starts the chat with the Claude AI.
+   *   Starts the chat with the Chat AI.
    */
   public function chatStart() {
-    $this->printColored("Welcome to DrupalAI Chat with Image Support!", self::CLAUDE_COLOR, FALSE);
-    $this->printColored("Type 'exit' to end the conversation.", self::CLAUDE_COLOR, FALSE);
-    $this->printColored("Type 'image' to include an image in your message.", self::CLAUDE_COLOR, FALSE);
-    $this->printColored("Type 'automode [number]' to enter Autonomous mode with a specific number of iterations.", self::CLAUDE_COLOR, FALSE);
-    $this->printColored("While in automode, press Ctrl+C at any time to exit the automode to return to regular chat.", self::CLAUDE_COLOR, FALSE);
+    $this->printColored("Welcome to DrupalAI Chat with Image Support!", self::MODEL_COLOR, FALSE);
+    $this->printColored("Type 'exit' to end the conversation.", self::MODEL_COLOR, FALSE);
+    $this->printColored("Type 'image' to include an image in your message.", self::MODEL_COLOR, FALSE);
+    $this->printColored("Type 'automode [number]' to enter Autonomous mode with a specific number of iterations.", self::MODEL_COLOR, FALSE);
+    $this->printColored("While in automode, press Ctrl+C at any time to exit the automode to return to regular chat.", self::MODEL_COLOR, FALSE);
 
     $this->model = DrupalAiFactory::build('claude3');
 
@@ -93,12 +93,12 @@ class DrupalAiChat extends DrushCommands {
 
       if (trim($userInput) == '') {
         // Tell the user to enter something.
-        $this->printColored("Please enter a message.", self::CLAUDE_COLOR);
+        $this->printColored("Please enter a message.", self::MODEL_COLOR);
         continue;
       }
 
       if (strtolower($userInput) == 'exit') {
-        $this->printColored("Thank you for chatting. Goodbye!", self::CLAUDE_COLOR);
+        $this->printColored("Thank you for chatting. Goodbye!", self::MODEL_COLOR);
         break;
       }
 
@@ -112,7 +112,7 @@ class DrupalAiChat extends DrushCommands {
           $this->processAndDisplayResponse($response);
         }
         else {
-          $this->printColored("Invalid image path. Please try again.", self::CLAUDE_COLOR);
+          $this->printColored("Invalid image path. Please try again.", self::MODEL_COLOR);
           continue;
         }
       }
@@ -259,7 +259,7 @@ class DrupalAiChat extends DrushCommands {
   }
 
   /**
-   * Chats with the Claude AI.
+   * Chats with the AI.
    *
    * @param string $userInput
    *   The user input.
@@ -375,7 +375,7 @@ class DrupalAiChat extends DrushCommands {
         $parts = explode("```", $response);
         foreach ($parts as $i => $part) {
           if ($i % 2 == 0) {
-            $this->printColored($part, self::CLAUDE_COLOR);
+            $this->printColored($part, self::MODEL_COLOR);
           }
           else {
             $lines = explode("\n", $part);
@@ -384,13 +384,13 @@ class DrupalAiChat extends DrushCommands {
               $this->printColored("Code:\n$code", self::RESULT_COLOR);
             }
             else {
-              $this->printColored($part, self::CLAUDE_COLOR);
+              $this->printColored($part, self::MODEL_COLOR);
             }
           }
         }
       }
       else {
-        $this->printColored($response, self::CLAUDE_COLOR);
+        $this->printColored($response, self::MODEL_COLOR);
       }
     }
   }
