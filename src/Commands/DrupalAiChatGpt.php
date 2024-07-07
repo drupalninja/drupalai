@@ -12,7 +12,7 @@ use GuzzleHttp\Client;
  *
  * @package Drupal\drupalai\Commands
  */
-class DrupalAiChat extends DrushCommands {
+class DrupalAiChatGpt extends DrushCommands {
 
   // Define colors.
   const USER_COLOR = "\e[37m";
@@ -74,9 +74,9 @@ class DrupalAiChat extends DrushCommands {
   /**
    * Command to start chat.
    *
-   * @command drupalai:chatStart
-   * @aliases ai-chat
-   * @usage drupalai:chatStart
+   * @command drupalai:chatStartGpt
+   * @aliases ai-chat-gpt
+   * @usage drupalai:chatStartGpt
    *   Starts the chat with the Chat AI.
    */
   public function chatStart() {
@@ -86,7 +86,7 @@ class DrupalAiChat extends DrushCommands {
     $this->printColored("Type 'automode [number]' to enter Autonomous mode with a specific number of iterations.", self::MODEL_COLOR, FALSE);
     $this->printColored("While in automode, press Ctrl+C at any time to exit the automode to return to regular chat.", self::MODEL_COLOR, FALSE);
 
-    $this->model = DrupalAiFactory::build('claude3');
+    $this->model = DrupalAiFactory::build('gpt-3.5-turbo-0125');
 
     while (TRUE) {
       $userInput = $this->io()->ask(self::USER_COLOR . "You");
@@ -310,17 +310,13 @@ class DrupalAiChat extends DrushCommands {
     $assistantResponse = "";
     $exitContinuation = FALSE;
 
-    foreach ($data->content as $contentBlock) {
-      if ($contentBlock->type == "text") {
-        $assistantResponse .= $contentBlock->text . " ";
-        if (strpos($contentBlock->text, $this->continuationExitPhrase) !== FALSE) {
-          $exitContinuation = TRUE;
-        }
-      }
-      elseif ($contentBlock->type == "tool_use") {
-        $toolName = $contentBlock->name;
-        $toolInput = $contentBlock->input;
-        $toolUseId = $contentBlock->id;
+    $message = $data->choices[0]->message;
+
+    if (isset($message->tool_calls)) {
+      foreach ($message->tool_calls as $toolCall) {
+        $toolName = $toolCall->function->name;
+        $toolInput = json_decode($toolCall->function->arguments);
+        $toolId = $toolCall->id;
 
         $this->printColored("Tool Used: $toolName", self::TOOL_COLOR);
 
@@ -328,27 +324,26 @@ class DrupalAiChat extends DrushCommands {
 
         $this->printColored("Tool Result: $result", self::RESULT_COLOR);
 
-        // Add the tool use message to the conversation history.
-        $this->conversationHistory[] = $this->model->createToolUseMessage($toolUseId, $toolName, $toolInput);
+        $this->conversationHistory[] = $this->model->createToolUseMessage($toolId, $toolName, $toolInput);
+      }
 
-        // Add the tool result message to the conversation history.
-        $this->conversationHistory[] = $this->model->createToolResultMessage($toolUseId, $result);
+      $messages = $this->conversationHistory;
 
-        $messages = $this->conversationHistory;
-        $data = $this->model->chat($systemPrompt, $messages);
+      $data = $this->model->chat($systemPrompt, $messages);
 
-        if (!$data) {
-          return [
-            "I'm sorry, there was an error processing the message. Please try again.",
-            FALSE,
-          ];
-        }
+      if (!$data) {
+        return [
+          "I'm sorry, there was an error processing the message. Please try again.",
+          FALSE,
+        ];
+      }
 
-        foreach ($data->content as $toolContentBlock) {
-          if ($toolContentBlock->type == "text") {
-            $assistantResponse .= $toolContentBlock->text . " ";
-          }
-        }
+      $assistantResponse .= $data->choices[0]->message->content . " ";
+    }
+    else {
+      $assistantResponse .= $message->content . " ";
+      if (strpos($message->content, $this->continuationExitPhrase) !== FALSE) {
+        $exitContinuation = TRUE;
       }
     }
 
@@ -375,16 +370,16 @@ class DrupalAiChat extends DrushCommands {
         $parts = explode("```", $response);
         foreach ($parts as $i => $part) {
           if ($i % 2 == 0) {
-            $this->printColored($part, self::MODEL_COLOR);
+            $this->printColored($part, self::MODEL_COLOR, FALSE);
           }
           else {
             $lines = explode("\n", $part);
             $code = implode("\n", array_slice($lines, 1));
             if (trim($code)) {
-              $this->printColored("Code:\n$code", self::RESULT_COLOR);
+              $this->printColored("Code:\n$code", self::RESULT_COLOR, FALSE);
             }
             else {
-              $this->printColored($part, self::MODEL_COLOR);
+              $this->printColored($part, self::MODEL_COLOR, FALSE);
             }
           }
         }

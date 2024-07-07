@@ -325,17 +325,27 @@ class DrupalAiHelper {
   /**
    * Get Chat Tools.
    *
+   * @param string $type
+   *   The type of chat tool.
+   *
    * @return array
    *   The chat tools.
    */
-  public static function getChatTools(): array {
+  public static function getChatTools($type = 'claude'): array {
     $tools = self::$tools;
-    foreach ($tools as &$tool) {
-      // GPT tools have parameters instead of input_schema.
-      if (strpos($tool['name'], 'gpt') === 0) {
+
+    // OpenAI tools have a different structure.
+    if ($type == 'openai') {
+      $new_tools = [];
+      foreach ($tools as &$tool) {
         $tool['parameters'] = $tool['input_schema'];
         unset($tool['input_schema']);
+        $new_tools[] = [
+          'type' => 'function',
+          'function' => $tool,
+        ];
       }
+      $tools = $new_tools;
     }
     return $tools;
   }

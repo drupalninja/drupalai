@@ -3,6 +3,7 @@
 namespace Drupal\drupalai\Models;
 
 use Drupal\drupalai\DrupalAiChatInterface;
+use Drupal\drupalai\DrupalAiHelper;
 use GuzzleHttp\Client;
 
 /**
@@ -48,6 +49,8 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
             ],
             $messages
           ),
+          'tools' => DrupalAiHelper::getChatTools('openai'),
+          'tool_choice' => 'auto',
           'max_tokens' => 4096,
         ],
       ]);
@@ -103,7 +106,23 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
   }
 
   /**
-   * Create a tool result message for OpenAI.
+   * Create an assistant message for OpenAI.
+   *
+   * @param string $assistantResponse
+   *   The assistant response.
+   *
+   * @return array
+   *   The message array.
+   */
+  public function createAssistantMessage(string $assistantResponse): array {
+    return [
+      "role" => "assistant",
+      "content" => $assistantResponse,
+    ];
+  }
+
+  /**
+   * Create a tool result message (Not used for OpenAI).
    *
    * @param string $toolUseId
    *   The tool use ID.
@@ -114,16 +133,7 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
    *   The message array.
    */
   public function createToolResultMessage(string $toolUseId, string $result): array {
-    return [
-      "role" => "user",
-      "content" => [
-        [
-          "type" => "tool_result",
-          "tool_use_id" => $toolUseId,
-          "content" => $result,
-        ],
-      ],
-    ];
+    return [];
   }
 
   /**
