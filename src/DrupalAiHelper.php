@@ -17,7 +17,7 @@ class DrupalAiHelper {
    */
   protected static $models = [
     //'gpt-4o' => 'ChatGPT-4o',
-    // 'gpt-3.5-turbo-0125' => 'ChatGPT 3.5 Turbo',
+     'gpt-3.5-turbo-0125' => 'ChatGPT 3.5 Turbo',
     // 'gemini' => 'Gemini',
     'claude3' => 'Claude 3',
     // 'llama3' => 'Llama 3:7b (ollama)',
@@ -329,7 +329,15 @@ class DrupalAiHelper {
    *   The chat tools.
    */
   public static function getChatTools(): array {
-    return self::$tools;
+    $tools = self::$tools;
+    foreach ($tools as &$tool) {
+      // GPT tools have parameters instead of input_schema.
+      if (strpos($tool['name'], 'gpt') === 0) {
+        $tool['parameters'] = $tool['input_schema'];
+        unset($tool['input_schema']);
+      }
+    }
+    return $tools;
   }
 
   /**

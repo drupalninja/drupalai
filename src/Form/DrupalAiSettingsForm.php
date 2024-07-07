@@ -35,6 +35,13 @@ class DrupalAiSettingsForm extends ConfigFormBase {
       '#title' => $this->t('API Settings'),
     ];
 
+    $form['system_prompt'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('System Prompt'),
+      '#default_value' => $config->get('system_prompt') ?? drupalai_get_prompt('chat'),
+      '#description' => $this->t('Enter the system prompt for the AI.'),
+    ];
+
     $form['api_settings']['openai_api_key'] = [
       '#type' => 'textfield',
       '#title' => $this->t('OpenAI API Key'),
@@ -84,6 +91,7 @@ class DrupalAiSettingsForm extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $config = $this->config('drupalai.settings');
+    $config->set('system_prompt', $form_state->getValue('system_prompt'));
     $config->set('openai_api_key', $form_state->getValue('openai_api_key'));
     $config->set('gemini_api_key', $form_state->getValue('gemini_api_key'));
     $config->set('claude3_api_key', $form_state->getValue('claude3_api_key'));

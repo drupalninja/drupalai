@@ -2,6 +2,7 @@
 
 namespace Drupal\drupalai;
 
+use Drupal\drupalai\Commands\DrupalAiChat;
 use Drupal\drupalai\Models\DrupalAiChatClaude3;
 use Drupal\drupalai\Models\DrupalAiChatGemini;
 use Drupal\drupalai\Models\DrupalAiChatLlama3;
@@ -18,8 +19,8 @@ class DrupalAiFactory {
    * @param string $model
    *   Model name.
    *
-   * @return \Drupal\drupalai\DrupalAiChat
-   *   DrupalAiChat instance.
+   * @return \Drupal\drupalai\DrupalAiChatOpenAi
+   *   DrupalAiChatOpenAi instance.
    */
   public static function build($model): DrupalAiChatInterface {
     $config = \Drupal::config('drupalai.settings');

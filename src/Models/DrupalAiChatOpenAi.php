@@ -4,26 +4,11 @@ namespace Drupal\drupalai\Models;
 
 use Drupal\drupalai\DrupalAiChatInterface;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
 
 /**
- * OpenAI implementation of DrupalAiChat.
+ * OpenAI GPT-4 implementation of DrupalAiChat.
  */
 class DrupalAiChatOpenAi implements DrupalAiChatInterface {
-
-  /**
-   * The model to use.
-   *
-   * @var string
-   */
-  private $model;
-
-  /**
-   * Constructor.
-   */
-  public function __construct($model = 'gpt-4o') {
-    $this->model = $model;
-  }
 
   /**
    * Get Chat.
@@ -37,7 +22,6 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
    *   The JSON response object from the API.
    */
   public function chat(string $systemPrompt, array $messages): object|bool {
-
     $config = \Drupal::config('drupalai.settings');
     $api_key = $config->get('openai_api_key');
 
@@ -50,16 +34,6 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
 
     $client = new Client();
 
-    $contents = [
-      "role" => "user",
-      "content" => [
-        [
-          "type" => "text",
-          "text" => $prompt,
-        ],
-      ],
-    ];
-
     try {
       $response = $client->request('POST', $url, [
         'headers' => [
@@ -67,34 +41,114 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
           'Authorization' => 'Bearer ' . $api_key,
         ],
         'json' => [
-          "model" => $this->model,
-          "messages" => $contents,
-          "temperature" => 1,
-          "max_tokens" => 4096,
-          "top_p" => 1,
-          "frequency_penalty" => 0,
-          "presence_penalty" => 0,
+          'model' => 'gpt-3.5-turbo-0125',
+          'messages' => array_merge(
+            [
+              ['role' => 'system', 'content' => $systemPrompt],
+            ],
+            $messages
+          ),
+          'max_tokens' => 4096,
         ],
       ]);
-    } catch (RequestException $e) {
-      \Drupal::logger('drupalai')->error($e->getMessage());
+    }
+    catch (\Exception $e) {
+      \Drupal::logger('drupalai')->error('Error calling OpenAI API: ' . $e->getMessage());
       return FALSE;
     }
 
-    $text = '';
     if ($response->getStatusCode() != 200) {
-      \Drupal::logger('drupalai')->error($response->getBody()->getContents());
+      \Drupal::logger('drupalai')->error('Error calling OpenAI API: ' . $response->getStatusCode() . ' ' . $response->getReasonPhrase());
       return FALSE;
     }
     else {
       $data = $response->getBody()->getContents();
-      $json = json_decode($data);
-
-      if (isset($json->choices[0]->message->content)) {
-        $text = $json->choices[0]->message->content;
-      }
+      return json_decode($data);
     }
-
   }
 
+  /**
+   * Create an image message for OpenAI.
+   *
+   * @param string $imageBase64
+   *   The base64 encoded image data.
+   * @param string $userInput
+   *   The user input.
+   *
+   * @return array
+   *   The message array.
+   */
+  public function createImageMessage(string $imageBase64, string $userInput): array {
+    // Note: OpenAI's API does not support image inputs directly in chat messages.
+    return [
+      "role" => "user",
+      "content" => "User input for image: $userInput (image data not supported directly in OpenAI API)",
+    ];
+  }
+
+  /**
+   * Create a user input message for OpenAI.
+   *
+   * @param string $userInput
+   *   The user input.
+   *
+   * @return array
+   *   The message array.
+   */
+  public function createUserInputMessage(string $userInput): array {
+    return [
+      "role" => "user",
+      "content" => $userInput,
+    ];
+  }
+
+  /**
+   * Create a tool result message for OpenAI.
+   *
+   * @param string $toolUseId
+   *   The tool use ID.
+   * @param string $result
+   *   The tool result.
+   *
+   * @return array
+   *   The message array.
+   */
+  public function createToolResultMessage(string $toolUseId, string $result): array {
+    return [
+      "role" => "user",
+      "content" => [
+        [
+          "type" => "tool_result",
+          "tool_use_id" => $toolUseId,
+          "content" => $result,
+        ],
+      ],
+    ];
+  }
+
+  /**
+   * Create a tool use message for OpenAI.
+   *
+   * @param string $toolUseId
+   *   The tool use ID.
+   * @param string $toolName
+   *   The tool name.
+   * @param object $toolInput
+   *   The tool input.
+   *
+   * @return array
+   *   The message array.
+   */
+  public function createToolUseMessage(string $toolUseId, string $toolName, object $toolInput): array {
+    return [
+      "role" => "assistant",
+      "content" => '',
+      "tools" => [
+        [
+          "name" => $toolName,
+          "parameters" => $toolInput,
+        ],
+      ],
+    ];
+  }
 }

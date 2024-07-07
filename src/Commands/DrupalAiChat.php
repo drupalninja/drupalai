@@ -86,9 +86,7 @@ class DrupalAiChat extends DrushCommands {
     $this->printColored("Type 'automode [number]' to enter Autonomous mode with a specific number of iterations.", self::CLAUDE_COLOR, FALSE);
     $this->printColored("While in automode, press Ctrl+C at any time to exit the automode to return to regular chat.", self::CLAUDE_COLOR, FALSE);
 
-    // Prompt the user to select the model type.
-    $model = $this->io()->choice('Select the model type', DrupalAiHelper::getModels(), 0);
-    $this->model = DrupalAiFactory::build($model);
+    $this->model = DrupalAiFactory::build('claude3');
 
     while (TRUE) {
       $userInput = $this->io()->ask(self::USER_COLOR . "You");
