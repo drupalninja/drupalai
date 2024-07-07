@@ -308,8 +308,6 @@ class DrupalAiChatGpt extends DrushCommands {
 
     $data = $this->model->chat($systemPrompt, $messages);
 
-    print_r($data);
-
     if (!$data) {
       return [
         "I'm sorry, there was an error processing the message. Please try again.",
