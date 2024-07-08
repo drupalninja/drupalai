@@ -63,6 +63,13 @@ class DrupalAiChat extends DrushCommands {
   protected $model;
 
   /**
+   * AI model name.
+   *
+   * @var string
+   */
+  protected $modelName;
+
+  /**
    * Constructs a new DrupalAiChat object.
    */
   public function __construct() {
@@ -87,8 +94,8 @@ class DrupalAiChat extends DrushCommands {
     $this->printColored("While in automode, press Ctrl+C at any time to exit the automode to return to regular chat.", self::MODEL_COLOR, FALSE);
 
     // Prompt user for the AI model to use.
-    $model = $this->io()->choice('Select the AI model to use', DrupalAiHelper::getModels(), 0);
-    $this->model = DrupalAiFactory::build($model);
+    $this->modelName = $this->io()->choice('Select the AI model to use', DrupalAiHelper::getModels(), 0);
+    $this->model = DrupalAiFactory::build($this->modelName);
 
     while (TRUE) {
       $userInput = $this->io()->ask(self::USER_COLOR . "You");
@@ -105,12 +112,17 @@ class DrupalAiChat extends DrushCommands {
       }
 
       if (strtolower($userInput) == 'image') {
-        $imagePath = $this->io()->ask(self::USER_COLOR . "Drag and drop your image here");
-        $imagePath = str_replace("'", "", $imagePath);
+        if ($this->modelName == 'gpt-3.5-turbo-0125' || $this->modelName == 'gemini') {
+          $this->printColored("Image support supported for this model.", self::MODEL_COLOR);
+          continue;
+        }
 
-        if (file_exists($imagePath)) {
+        $imageUrl = $this->io()->ask(self::USER_COLOR . "Enter URL for image here");
+
+        // Check if the image URL is valid.
+        if (filter_var($imageUrl, FILTER_VALIDATE_URL)) {
           $userInput = $this->io()->ask(self::USER_COLOR . "You (prompt for image)");
-          [$response] = $this->chatWithModel($userInput, $imagePath);
+          [$response] = $this->chatWithModel($userInput, $imageUrl);
           $this->processAndDisplayResponse($response);
         }
         else {
@@ -267,7 +279,7 @@ class DrupalAiChat extends DrushCommands {
    *
    * @param string $userInput
    *   The user input.
-   * @param string|null $imagePath
+   * @param string|null $imageUrl
    *   The image path.
    * @param int|null $currentIteration
    *   The current iteration.
@@ -277,20 +289,28 @@ class DrupalAiChat extends DrushCommands {
    * @return array
    *   The assistant response and the exit continuation status.
    */
-  protected function chatWithModel($userInput, $imagePath = NULL, $currentIteration = NULL, $maxIterations = NULL) {
-    if ($imagePath) {
-      $this->printColored("Processing image at path: $imagePath", self::TOOL_COLOR);
-      $imageBase64 = DrupalAiHelper::encodeImageToBase64($imagePath);
-      if (strpos($imageBase64, "Error") === 0) {
-        $this->printColored("Error encoding image: $imageBase64", self::TOOL_COLOR);
-        return [
-          "I'm sorry, there was an error processing the image. Please try again.",
-          FALSE,
-        ];
-      }
+  protected function chatWithModel($userInput, $imageUrl = NULL, $currentIteration = NULL, $maxIterations = NULL) {
+    if ($imageUrl) {
+      $this->printColored("Processing image at Url: $imageUrl", self::TOOL_COLOR);
 
-      // Add the image message to the conversation history.
-      $this->conversationHistory[] = $this->model->createImageMessage($imageBase64, $userInput);
+      // Encode the image to base64 if this is not a GPT model.
+      if ($this->modelName == 'gpt-4o') {
+        // Add the image message to the conversation history.
+        $this->conversationHistory[] = $this->model->createImageMessage($imageUrl, $userInput);
+      }
+      else {
+        $imageBase64 = DrupalAiHelper::encodeImageToBase64($imageUrl);
+        if (strpos($imageBase64, "Error") === 0) {
+          $this->printColored("Error encoding image: $imageBase64", self::TOOL_COLOR);
+          return [
+            "I'm sorry, there was an error processing the image. Please try again.",
+            FALSE,
+          ];
+        }
+
+        // Add the image message to the conversation history.
+        $this->conversationHistory[] = $this->model->createImageMessage($imageBase64, $userInput);
+      }
 
       $this->printColored("Image message added to conversation history", self::TOOL_COLOR);
     }

@@ -89,15 +89,15 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
   /**
    * Create an image message for OpenAI.
    *
-   * @param string $imageBase64
-   *   The base64 encoded image data.
+   * @param string $image
+   *   The base64 encoded image data or image URL.
    * @param string $userInput
    *   The user input.
    *
    * @return array
    *   The message array.
    */
-  public function createImageMessage(string $imageBase64, string $userInput): array {
+  public function createImageMessage(string $image, string $userInput): array {
     return [
       "role" => "user",
       "content" => [
@@ -108,7 +108,7 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
         [
           "type" => "image_url",
           "image_url" => [
-            "url" => $imageBase64,
+            "url" => $image,
           ],
         ],
       ],

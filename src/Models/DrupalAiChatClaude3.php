@@ -71,15 +71,15 @@ class DrupalAiChatClaude3 implements DrupalAiChatInterface {
   /**
    * Create an image message for Claude.
    *
-   * @param string $imageBase64
-   *   The base64 encoded image data.
+   * @param string $image
+   *   The base64 encoded image data or image URL.
    * @param string $userInput
    *   The user input.
    *
    * @return array
    *   The message array.
    */
-  public function createImageMessage(string $imageBase64, string $userInput): array {
+  public function createImageMessage(string $image, string $userInput): array {
     return [
       "role" => "user",
       "content" => [
@@ -88,7 +88,7 @@ class DrupalAiChatClaude3 implements DrupalAiChatInterface {
           "source" => [
             "type" => "base64",
             "media_type" => "image/jpeg",
-            "data" => $imageBase64,
+            "data" => $image,
           ],
         ],
         [

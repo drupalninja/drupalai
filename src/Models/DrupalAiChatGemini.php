@@ -119,28 +119,17 @@ class DrupalAiChatGemini implements DrupalAiChatInterface {
   /**
    * Create an image message for Gemini.
    *
-   * @param string $imageBase64
-   *   The base64 encoded image data.
+   * @param string $image
+   *   The base64 encoded image data or image URL.
    * @param string $userInput
    *   The user input.
    *
    * @return array
    *   The message array.
    */
-  public function createImageMessage(string $imageBase64, string $userInput): array {
-    return [
-      "role" => "user",
-      "parts" => [
-        [
-          "text" => "User input for image: $userInput",
-        ],
-        [
-          "inline_data" => [
-            "data" => $imageBase64,
-          ],
-        ],
-      ],
-    ];
+  public function createImageMessage(string $image, string $userInput): array {
+    // This application does not yet have integration with File API.
+    return [];
   }
 
   /**

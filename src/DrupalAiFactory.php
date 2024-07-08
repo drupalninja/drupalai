@@ -2,7 +2,6 @@
 
 namespace Drupal\drupalai;
 
-use Drupal\drupalai\Commands\DrupalAiChat;
 use Drupal\drupalai\Models\DrupalAiChatClaude3;
 use Drupal\drupalai\Models\DrupalAiChatGemini;
 use Drupal\drupalai\Models\DrupalAiChatLlama3;

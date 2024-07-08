@@ -255,16 +255,17 @@ class DrupalAiHelper {
   /**
    * Encodes an image to base64.
    *
-   * @param string $imagePath
+   * @param string $imageUrl
    *   The path of the image to encode.
    *
    * @return string
    *   The base64 encoded image.
    */
-  public static function encodeImageToBase64($imagePath) {
+  public static function encodeImageToBase64($imageUrl) {
     try {
-      $img = file_get_contents($imagePath);
+      $img = file_get_contents($imageUrl);
       $base64 = base64_encode($img);
+
       return $base64;
     }
     catch (\Exception $e) {
