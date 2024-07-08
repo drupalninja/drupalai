@@ -16,8 +16,8 @@ class DrupalAiHelper {
    * @var array
    */
   protected static $models = [
-    //'gpt-4o' => 'ChatGPT-4o',
-     'gpt-3.5-turbo-0125' => 'ChatGPT 3.5 Turbo',
+    'gpt-4o' => 'ChatGPT-4o',
+    'gpt-3.5-turbo-0125' => 'ChatGPT 3.5 Turbo',
     // 'gemini' => 'Gemini',
     'claude3' => 'Claude 3',
     // 'llama3' => 'Llama 3:7b (ollama)',
