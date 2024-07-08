@@ -20,9 +20,6 @@ class DrupalAiHelper {
     'gpt-3.5-turbo-0125' => 'ChatGPT 3.5 Turbo',
     'gemini' => 'Gemini 1.5',
     'claude3' => 'Claude 3 Haiku',
-    // 'llama3' => 'Llama 3:7b (ollama)',
-    // 'codellama' => 'Codellama:7b (ollama)',
-    // 'codegemma:7b' => 'Codegemma:7b (ollama)',
   ];
 
   /**
