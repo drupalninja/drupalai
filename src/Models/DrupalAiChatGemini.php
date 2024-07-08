@@ -33,7 +33,7 @@ class DrupalAiChatGemini implements DrupalAiChatInterface {
       return FALSE;
     }
 
-    $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=' . $api_key;
+    $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' . $api_key;
 
     $client = new Client();
 
@@ -267,7 +267,7 @@ class DrupalAiChatGemini implements DrupalAiChatInterface {
    *   The text from the essage.
    */
   public function getTextMessage(object $message): string {
-    return $message['parts'][0]['text'];
+    return $message->text;
   }
 
 }
