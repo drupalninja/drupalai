@@ -18,8 +18,8 @@ class DrupalAiHelper {
   protected static $models = [
     'gpt-4o' => 'ChatGPT-4o',
     'gpt-3.5-turbo-0125' => 'ChatGPT 3.5 Turbo',
-    // 'gemini' => 'Gemini',
-    'claude3' => 'Claude 3',
+    'gemini' => 'Gemini 1.5',
+    'claude3' => 'Claude 3 Haiku',
     // 'llama3' => 'Llama 3:7b (ollama)',
     // 'codellama' => 'Codellama:7b (ollama)',
     // 'codegemma:7b' => 'Codegemma:7b (ollama)',
@@ -334,19 +334,27 @@ class DrupalAiHelper {
   public static function getChatTools($type = 'claude'): array {
     $tools = self::$tools;
 
-    // OpenAI tools have a different structure.
-    if ($type == 'openai') {
+    // Other tools have a different structure.
+    if ($type != 'claude') {
       $new_tools = [];
       foreach ($tools as &$tool) {
         $tool['parameters'] = $tool['input_schema'];
         unset($tool['input_schema']);
-        $new_tools[] = [
-          'type' => 'function',
-          'function' => $tool,
-        ];
+        if ($type == 'openai') {
+          $new_tools[] = [
+            'type' => 'function',
+            'function' => $tool,
+          ];
+        }
+        else {
+          $new_tools[] = $tool;
+        }
       }
       $tools = $new_tools;
     }
+
+    //print_r($tools);die;
+
     return $tools;
   }
 

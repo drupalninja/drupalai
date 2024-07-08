@@ -50,9 +50,6 @@ class DrupalAiChatClaude3 implements DrupalAiChatInterface {
           'system' => $systemPrompt,
           "messages" => $messages,
           'tools' => DrupalAiHelper::getChatTools(),
-          'tool_choice' => [
-            'type' => $toolChoice,
-          ],
         ],
       ]);
     }

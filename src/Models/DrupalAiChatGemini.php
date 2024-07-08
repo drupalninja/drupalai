@@ -2,9 +2,9 @@
 
 namespace Drupal\drupalai\Models;
 
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
 use Drupal\drupalai\DrupalAiChatInterface;
+use Drupal\drupalai\DrupalAiHelper;
+use GuzzleHttp\Client;
 
 /**
  * Gemini implementation of DrupalAiChat.
@@ -12,22 +12,19 @@ use Drupal\drupalai\DrupalAiChatInterface;
 class DrupalAiChatGemini implements DrupalAiChatInterface {
 
   /**
-   * The contents of the request.
-   *
-   * @var array
-   */
-  private $contents = [];
-
-  /**
    * Get Chat.
    *
-   * @param string $prompt
-   *   The prompt to send to the API.
+   * @param string $systemPrompt
+   *   The system prompt.
+   * @param array $messages
+   *   The AI messages.
+   * @param string $toolChoice
+   *   The tool choice.
    *
-   * @return string
-   *   The response from the API.
+   * @return array|bool
+   *   The array of message objects from the API.
    */
-  public function getChat(string $prompt): string {
+  public function chat(string $systemPrompt, array $messages, string $toolChoice = 'auto'): array|bool {
     $config = \Drupal::config('drupalai.settings');
     $api_key = $config->get('gemini_api_key');
 
@@ -66,14 +63,16 @@ class DrupalAiChatGemini implements DrupalAiChatInterface {
       ],
     ];
 
-    $this->contents[] = [
-      "role" => "user",
-      "parts" => [
-        [
-          "text" => $prompt,
-        ],
+    $toolConfig = [
+      "function_calling_config" => [
+        "mode" => "ANY",
       ],
     ];
+
+    // If the tool choice is not auto, set the allowed function names.
+    if ($toolChoice != 'auto') {
+      $toolConfig['function_calling_config']['allowed_function_names'] = [$toolChoice];
+    }
 
     try {
       $response = $client->request('POST', $url, [
@@ -81,47 +80,205 @@ class DrupalAiChatGemini implements DrupalAiChatInterface {
           'Content-Type' => 'application/json',
         ],
         'json' => [
-          'contents' => $this->contents,
+          'contents' => array_merge(
+            [
+              ['role' => 'model', 'parts' => [['text' => $systemPrompt]]],
+            ],
+            $messages
+          ),
+          'tools' => [
+            "functionDeclarations" => DrupalAiHelper::getChatTools('gemini'),
+          ],
+          "tool_config" => $toolConfig,
           'generationConfig' => $generation_config,
           'safetySettings' => $safety_settings,
         ],
       ]);
     }
-    catch (RequestException $e) {
-      \Drupal::logger('drupalai')->error($e->getMessage());
+    catch (\Exception $e) {
+      \Drupal::logger('drupalai')->error('Error calling Gemini API: ' . $e->getMessage());
       return FALSE;
     }
 
-    $text = '';
-
     if ($response->getStatusCode() != 200) {
-      \Drupal::logger('drupalai')->error($response->getBody()->getContents());
+      \Drupal::logger('drupalai')->error('Error calling Gemini API: ' . $response->getStatusCode() . ' ' . $response->getReasonPhrase());
       return FALSE;
     }
     else {
       $data = json_decode($response->getBody()->getContents());
 
-      if (isset($data->candidates[0]->content->parts[0]->text)) {
-        $text = $data->candidates[0]->content->parts[0]->text;
-
-        // Regex to match everything between <filse> and </files>.
-        preg_match('/(<files>.*?<\/files>)/s', $text, $matches);
-        $text = $matches[1] ?? '';
-
-        if ($text) {
-          $this->contents[] = [
-            "role" => "model",
-            "parts" => [
-              [
-                "text" => $text,
-              ],
-            ],
-          ];
-        }
+      if (isset($data->candidates[0]->content->parts)) {
+        return $data->candidates[0]->content->parts;
+      }
+      else {
+        return FALSE;
       }
     }
+  }
 
-    return $text;
+  /**
+   * Create an image message for Gemini.
+   *
+   * @param string $imageBase64
+   *   The base64 encoded image data.
+   * @param string $userInput
+   *   The user input.
+   *
+   * @return array
+   *   The message array.
+   */
+  public function createImageMessage(string $imageBase64, string $userInput): array {
+    return [
+      "role" => "user",
+      "parts" => [
+        [
+          "text" => "User input for image: $userInput",
+        ],
+        [
+          "inline_data" => [
+            "data" => $imageBase64,
+          ],
+        ],
+      ],
+    ];
+  }
+
+  /**
+   * Create a user input message for Gemini.
+   *
+   * @param string $userInput
+   *   The user input.
+   *
+   * @return array
+   *   The message array.
+   */
+  public function createUserInputMessage(string $userInput): array {
+    return [
+      "role" => "user",
+      "parts" => [["text" => $userInput]],
+    ];
+  }
+
+  /**
+   * Create an assistant message for Gemini.
+   *
+   * @param string $assistantResponse
+   *   The assistant response.
+   *
+   * @return array
+   *   The message array.
+   */
+  public function createAssistantMessage(string $assistantResponse): array {
+    return [
+      "role" => "model",
+      "parts" => [["text" => $assistantResponse]],
+    ];
+  }
+
+  /**
+   * Create a tool result message for Gemini.
+   *
+   * @param string $toolUseId
+   *   The tool use ID.
+   * @param string $result
+   *   The tool result.
+   *
+   * @return array
+   *   The message array.
+   */
+  public function createToolResultMessage(string $toolUseId, string $result): array {
+    return [
+      "role" => "model",
+      "parts" => [
+        [
+          "text" => "Tool result for tool use ID $toolUseId: $result",
+        ],
+      ],
+    ];
+  }
+
+  /**
+   * Create a tool use message for Gemini.
+   *
+   * @param string $toolUseId
+   *   The tool use ID.
+   * @param string $toolName
+   *   The tool name.
+   * @param object $toolInput
+   *   The tool input.
+   *
+   * @return array
+   *   The message array.
+   */
+  public function createToolUseMessage(string $toolUseId, string $toolName, object $toolInput): array {
+    return [
+      "role" => "model",
+      "parts" => [
+        [
+          "text" => "Tool use for tool ID $toolUseId: $toolName",
+        ],
+      ],
+    ];
+  }
+
+  /**
+   * Check if the message is a text message.
+   *
+   * @param object $message
+   *   The message object.
+   *
+   * @return bool
+   *   TRUE if the message is a text message, FALSE otherwise.
+   */
+  public function isTextMessage(object $message): bool {
+    return !empty($message->text);
+  }
+
+  /**
+   * Check if the message is a tool message.
+   *
+   * @param object $message
+   *   The message object.
+   *
+   * @return bool
+   *   TRUE if the message is a tool message, FALSE otherwise.
+   */
+  public function isToolMessage(object $message): bool {
+    return !empty($message->functionCall);
+  }
+
+  /**
+   * Get tool calls from a message.
+   *
+   * @param object $message
+   *   The message object.
+   *
+   * @return array
+   *   The tool calls array.
+   */
+  public function toolCalls(object $message): array {
+    $tools = [];
+
+    $tool = new \stdClass();
+    $tool->name = $message->functionCall->name;
+    $tool->input = $message->functionCall->args;
+    $tool->id = 'N/A';
+    $tools[] = $tool;
+
+    return $tools;
+  }
+
+  /**
+   * Get the text from the message.
+   *
+   * @param object $message
+   *   The message object.
+   *
+   * @return string
+   *   The text from the essage.
+   */
+  public function getTextMessage(object $message): string {
+    return $message['parts'][0]['text'];
   }
 
 }

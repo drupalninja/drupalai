@@ -12,6 +12,20 @@ use GuzzleHttp\Client;
 class DrupalAiChatOpenAi implements DrupalAiChatInterface {
 
   /**
+   * The model to use.
+   *
+   * @var string
+   */
+  private string $model;
+
+  /**
+   * Constructor.
+   */
+  public function __construct($model) {
+    $this->model = $model;
+  }
+
+  /**
    * Get Chat.
    *
    * @param string $systemPrompt
@@ -44,7 +58,7 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
           'Authorization' => 'Bearer ' . $api_key,
         ],
         'json' => [
-          'model' => 'gpt-3.5-turbo-0125',
+          'model' => $this->model,
           'messages' => array_merge(
             [
               ['role' => 'system', 'content' => $systemPrompt],
