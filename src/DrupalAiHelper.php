@@ -243,6 +243,10 @@ class DrupalAiHelper {
     // Get the full path relative to the Drupal root directory.
     $fullPath = DRUPAL_ROOT . '/' . $path;
 
+    if (!is_dir($fullPath)) {
+      return "Directory not found: $path";
+    }
+
     try {
       $files = array_diff(scandir($fullPath), ['.', '..']);
       return "\n" . implode("\n", $files);

@@ -361,6 +361,22 @@ class DrupalAiChat extends DrushCommands {
           // Add the tool result message to the conversation history.
           $this->conversationHistory[] = $this->model->createToolResultMessage($toolId, $result);
         }
+
+        $messages = $this->conversationHistory;
+        $data = $this->model->chat($systemPrompt, $messages);
+
+        if (!$data) {
+          return [
+            "I'm sorry, there was an error processing the message. Please try again.",
+            FALSE,
+          ];
+        }
+
+        foreach ($data as $message) {
+          if ($this->model->isTextMessage($message)) {
+            $assistantResponse = $this->model->getTextMessage($message);
+          }
+        }
       }
       else {
         $text = $this->model->getTextMessage($message);
