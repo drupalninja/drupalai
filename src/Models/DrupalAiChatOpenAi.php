@@ -5,7 +5,6 @@ namespace Drupal\drupalai\Models;
 use Drupal\drupalai\DrupalAiChatInterface;
 use Drupal\drupalai\DrupalAiHelper;
 use GuzzleHttp\Client;
-use stdClass;
 
 /**
  * OpenAI GPT-4 implementation of DrupalAiChat.
@@ -85,10 +84,20 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
    *   The message array.
    */
   public function createImageMessage(string $imageBase64, string $userInput): array {
-    // Note: OpenAI's API does not support image inputs directly in chat messages.
     return [
       "role" => "user",
-      "content" => "User input for image: $userInput (image data not supported directly in OpenAI API)",
+      "content" => [
+        [
+          "type" => "text",
+          "text" => "User input for image: $userInput",
+        ],
+        [
+          "type" => "image_url",
+          "image_url" => [
+            "url" => $imageBase64,
+          ],
+        ],
+      ],
     ];
   }
 

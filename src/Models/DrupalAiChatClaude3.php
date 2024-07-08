@@ -92,7 +92,7 @@ class DrupalAiChatClaude3 implements DrupalAiChatInterface {
             "type" => "base64",
             "media_type" => "image/jpeg",
             "data" => $imageBase64,
-          ]
+          ],
         ],
         [
           "type" => "text",
