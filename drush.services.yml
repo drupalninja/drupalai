@@ -3,7 +3,3 @@ services:
     class: \Drupal\drupalai\Commands\DrupalAiChat
     tags:
       - { name: drush.command }
-  drupalai.chatgpt_commands:
-    class: \Drupal\drupalai\Commands\DrupalAiChatGpt
-    tags:
-      - { name: drush.command }

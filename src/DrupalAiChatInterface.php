@@ -118,4 +118,15 @@ interface DrupalAiChatInterface {
    */
   public function toolCalls(object $message): array;
 
+  /**
+   * Get the text from the message.
+   *
+   * @param object $message
+   *   The message object.
+   *
+   * @return string
+   *   The text from the essage.
+   */
+  public function getTextMessage(object $message): string;
+
 }

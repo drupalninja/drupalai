@@ -217,4 +217,17 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
     return $tools;
   }
 
+  /**
+   * Get the text message from a message.
+   *
+   * @param object $message
+   *   The message object.
+   *
+   * @return string
+   *   The text message.
+   */
+  public function getTextMessage(object $message): string {
+    return $message->content . " ";
+  }
+
 }
