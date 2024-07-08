@@ -100,7 +100,7 @@ class DrupalAiChat extends DrushCommands {
       }
 
       if (strtolower($userInput) == 'exit') {
-        $this->printColored("Thank you for chatting. Goodbye!", self::MODEL_COLOR);
+        $this->printColored("Thank you for chatting. Goodbye!", self::MODEL_COLOR, FALSE);
         break;
       }
 
@@ -230,7 +230,8 @@ class DrupalAiChat extends DrushCommands {
 
         if (is_array($toolInput->files)) {
           foreach ($toolInput->files as $file) {
-            $results[] = DrupalAiHelper::createFile($file->path, $file->content ?? '');
+            $content = trim(stripcslashes($file->content));
+            $results[] = DrupalAiHelper::createFile($file->path, $content ?? '');
           }
           return "\n" . implode("\n", $results);
         }
@@ -240,7 +241,8 @@ class DrupalAiChat extends DrushCommands {
 
       case 'write_to_file':
         if (!empty($toolInput->path) && !empty($toolInput->content)) {
-          return DrupalAiHelper::writeToFile($toolInput->path, $toolInput->content);
+          $content = trim(stripcslashes($toolInput->content));
+          return DrupalAiHelper::writeToFile($toolInput->path, $content);
         }
         else {
           return "Invalid input for write_to_file tool.";
