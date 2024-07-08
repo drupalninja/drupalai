@@ -12,6 +12,23 @@ use GuzzleHttp\Client;
 class DrupalAiChatClaude3 implements DrupalAiChatInterface {
 
   /**
+   * The model name.
+   *
+   * @var string
+   */
+  private $model;
+
+  /**
+   * Constructor.
+   *
+   * @param string $model
+   *   The model name.
+   */
+  public function __construct(string $model) {
+    $this->model = $model;
+  }
+
+  /**
    * Get Chat.
    *
    * @param string $systemPrompt
@@ -45,7 +62,7 @@ class DrupalAiChatClaude3 implements DrupalAiChatInterface {
           'x-api-key' => $api_key,
         ],
         'json' => [
-          "model" => "claude-3-haiku-20240307",
+          "model" => $this->model,
           "max_tokens" => 4096,
           'system' => $systemPrompt,
           "messages" => $messages,

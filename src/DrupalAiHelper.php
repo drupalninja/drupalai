@@ -18,8 +18,11 @@ class DrupalAiHelper {
   protected static $models = [
     'gpt-4o' => 'ChatGPT-4o',
     'gpt-3.5-turbo-0125' => 'ChatGPT 3.5 Turbo',
-    'gemini' => 'Gemini 1.5',
-    'claude3' => 'Claude 3 Haiku',
+    'gemini-1.5-flash' => 'Gemini 1.5 Flash',
+    'gemini-1.5-pro' => 'Gemini 1.5 Pro',
+    'claude-3-haiku-20240307' => 'Claude 3 Haiku',
+    'claude-3-opus-20240229' => 'Claude 3 Opus',
+    'claude-3-sonnet-20240229' => 'Claude 3.5 Sonnet',
   ];
 
   /**

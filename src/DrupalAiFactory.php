@@ -24,37 +24,25 @@ class DrupalAiFactory {
   public static function build($model): DrupalAiChatInterface {
     $config = \Drupal::config('drupalai.settings');
 
-    if ($model == 'gemini') {
+    if (strpos($model, 'gemini') === 0) {
       $api_key = $config->get('gemini_api_key');
 
       if (!$api_key) {
         throw new \Exception('Gemini API key not set.');
       }
 
-      return new DrupalAiChatGemini();
+      return new DrupalAiChatGemini($model);
     }
-    elseif ($model == 'llama3' || $model == 'codellama' || $model == 'codegemma:7b') {
-      return new DrupalAiChatLlama3($model);
-    }
-    elseif ($model == 'claude3') {
+    elseif (strpos($model, 'claude') === 0) {
       $api_key = $config->get('claude3_api_key');
 
       if (!$api_key) {
         throw new \Exception('Claude 3 API key not set.');
       }
 
-      return new DrupalAiChatClaude3();
+      return new DrupalAiChatClaude3($model);
     }
-    elseif ($model == 'gpt-4o') {
-      $api_key = $config->get('openai_api_key');
-
-      if (!$api_key) {
-        throw new \Exception('OpenAI key not set.');
-      }
-
-      return new DrupalAiChatOpenAi($model);
-    }
-    elseif ($model == 'gpt-3.5-turbo-0125') {
+    elseif (strpos($model, 'gpt') === 0) {
       $api_key = $config->get('openai_api_key');
 
       if (!$api_key) {

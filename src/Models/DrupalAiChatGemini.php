@@ -12,6 +12,23 @@ use GuzzleHttp\Client;
 class DrupalAiChatGemini implements DrupalAiChatInterface {
 
   /**
+   * The model name.
+   *
+   * @var string
+   */
+  private $model;
+
+  /**
+   * Constructor.
+   *
+   * @param string $model
+   *   The model name.
+   */
+  public function __construct(string $model) {
+    $this->model = $model;
+  }
+
+  /**
    * Get Chat.
    *
    * @param string $systemPrompt
@@ -33,7 +50,7 @@ class DrupalAiChatGemini implements DrupalAiChatInterface {
       return FALSE;
     }
 
-    $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' . $api_key;
+    $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . $this->model . '-latest:generateContent?key=' . $api_key;
 
     $client = new Client();
 
