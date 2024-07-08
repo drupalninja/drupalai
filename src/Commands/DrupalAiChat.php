@@ -433,7 +433,21 @@ class DrupalAiChat extends DrushCommands {
       $iterationInfo = sprintf("You are currently on iteration %d out of %d in automode.", $currentIteration, $maxIterations);
     }
 
-    return str_replace(['{automode_status}', '{iteration_info}'], [$automodeStatus, $iterationInfo], $this->systemPrompt);
+    $themeHandler = \Drupal::service('theme_handler');
+    $themePath = $themeHandler->getTheme($themeHandler->getDefault())->getPath();
+
+    return str_replace(
+      [
+        '{automode_status}',
+        '{iteration_info}',
+        '{active_theme_folder}',
+      ],
+      [
+        $automodeStatus,
+        $iterationInfo,
+        $themePath,
+      ],
+      $this->systemPrompt);
   }
 
   /**
