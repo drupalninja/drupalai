@@ -21,10 +21,10 @@ class DrupalAiChatClaude3 implements DrupalAiChatInterface {
    * @param string $toolChoice
    *   The tool choice.
    *
-   * @return object|bool
-   *   The JSON response object from the API.
+   * @return array|bool
+   *   The array of message objects from the API.
    */
-  public function chat(string $systemPrompt, array $messages, string $toolChoice = 'auto'): object|bool {
+  public function chat(string $systemPrompt, array $messages, string $toolChoice = 'auto'): array|bool {
     $config = \Drupal::config('drupalai.settings');
     $api_key = $config->get('claude3_api_key');
 
@@ -67,7 +67,7 @@ class DrupalAiChatClaude3 implements DrupalAiChatInterface {
     }
     else {
       $data = $response->getBody()->getContents();
-      return json_decode($data);
+      return json_decode($data)->content;
     }
   }
 
@@ -183,6 +183,53 @@ class DrupalAiChatClaude3 implements DrupalAiChatInterface {
         ],
       ],
     ];
+  }
+
+  /**
+   * Check if the message is a text message.
+   *
+   * @param object $message
+   *   The message object.
+   *
+   * @return bool
+   *   TRUE if the message is a text message, FALSE otherwise.
+   */
+  public function isTextMessage(object $message): bool {
+    return $message->type == 'text';
+  }
+
+  /**
+   * Check if the message is a tool message.
+   *
+   * @param object $message
+   *   The message object.
+   *
+   * @return bool
+   *   TRUE if the message is a tool message, FALSE otherwise.
+   */
+  public function isToolMessage(object $message): bool {
+    return $message->type == 'tool_use';
+  }
+
+  /**
+   * Get tool calls from a message.
+   *
+   * @param object $message
+   *   The message object.
+   *
+   * @return array
+   *   The tool calls array.
+   */
+  public function toolCalls(object $message): array {
+    $tools = [];
+
+    $tool = new \stdClass();
+    $tool->name = $message->name;
+    $tool->input = $message->input;
+    $tool->id = $message->id;
+    $tools[] = $tool;
+
+    return $tools;
   }
 
 }

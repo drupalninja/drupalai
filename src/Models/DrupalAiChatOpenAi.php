@@ -5,6 +5,7 @@ namespace Drupal\drupalai\Models;
 use Drupal\drupalai\DrupalAiChatInterface;
 use Drupal\drupalai\DrupalAiHelper;
 use GuzzleHttp\Client;
+use stdClass;
 
 /**
  * OpenAI GPT-4 implementation of DrupalAiChat.
@@ -21,10 +22,10 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
    * @param string $toolChoice
    *   The tool choice.
    *
-   * @return object|bool|string
-   *   The JSON response object from the API.
+   * @return array|bool
+   *   The array of message objects from the API.
    */
-  public function chat(string $systemPrompt, array $messages, string $toolChoice = 'auto'): object|bool {
+  public function chat(string $systemPrompt, array $messages, string $toolChoice = 'auto'): array|bool {
     $config = \Drupal::config('drupalai.settings');
     $api_key = $config->get('openai_api_key');
 
@@ -68,7 +69,7 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
     }
     else {
       $data = $response->getBody()->getContents();
-      return json_decode($data);
+      return [json_decode($data)->choices[0]->message];
     }
   }
 
@@ -166,4 +167,54 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
       ],
     ];
   }
+
+  /**
+   * Check if the message is a text message.
+   *
+   * @param object $message
+   *   The message object.
+   *
+   * @return bool
+   *   TRUE if the message is a text message, FALSE otherwise.
+   */
+  public function isTextMessage(object $message): bool {
+    return !empty($message->content);
+  }
+
+  /**
+   * Check if the message is a tool message.
+   *
+   * @param object $message
+   *   The message object.
+   *
+   * @return bool
+   *   TRUE if the message is a tool message, FALSE otherwise.
+   */
+  public function isToolMessage(object $message): bool {
+    return !empty($message->tool_calls);
+  }
+
+  /**
+   * Get tool calls from a message.
+   *
+   * @param object $message
+   *   The message object.
+   *
+   * @return array
+   *   The tool calls array.
+   */
+  public function toolCalls(object $message): array {
+    $tools = [];
+
+    foreach ($message->tool_calls as $toolCall) {
+      $tool = new \stdClass();
+      $tool->name = $toolCall->function->name;
+      $tool->input = json_decode($toolCall->function->arguments);
+      $tool->id = $toolCall->id;
+      $tools[] = $tool;
+    }
+
+    return $tools;
+  }
+
 }

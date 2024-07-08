@@ -17,10 +17,10 @@ interface DrupalAiChatInterface {
    * @param string $toolChoice
    *   The tool choice.
    *
-   * @return object|bool
-   *   The JSON response object from the API.
+   * @return array|bool
+   *   The array of message objects from the API.
    */
-  public function chat(string $systemPrompt, array $messages, string $toolChoice = 'auto'): object|bool;
+  public function chat(string $systemPrompt, array $messages, string $toolChoice = 'auto'): array|bool;
 
   /**
    * Create an image message for AI chat.
@@ -84,5 +84,38 @@ interface DrupalAiChatInterface {
    *   The message array.
    */
   public function createToolUseMessage(string $toolUseId, string $toolName, object $toolInput) : array;
+
+  /**
+   * Check if the message is a text message.
+   *
+   * @param object $message
+   *   The message object.
+   *
+   * @return bool
+   *   TRUE if the message is a text message, FALSE otherwise.
+   */
+  public function isTextMessage(object $message): bool;
+
+  /**
+   * Check if the message is a tool message.
+   *
+   * @param object $message
+   *   The message object.
+   *
+   * @return bool
+   *   TRUE if the message is a tool message, FALSE otherwise.
+   */
+  public function isToolMessage(object $message): bool;
+
+  /**
+   * Get tool calls from a message.
+   *
+   * @param object $message
+   *   The message object.
+   *
+   * @return array
+   *   The tool calls array.
+   */
+  public function toolCalls(object $message): array;
 
 }

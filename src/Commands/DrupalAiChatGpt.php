@@ -318,44 +318,47 @@ class DrupalAiChatGpt extends DrushCommands {
     $assistantResponse = "";
     $exitContinuation = FALSE;
 
-    $message = $data->choices[0]->message;
+    foreach ($data as $message) {
+      if ($this->model->isToolMessage($message)) {
+        foreach ($this->model->toolCalls($message) as $toolCall) {
+          $toolName = $toolCall->name;
+          $toolInput = $toolCall->input;
+          $toolId = $toolCall->id;
 
-    if (isset($message->tool_calls)) {
-      foreach ($message->tool_calls as $toolCall) {
-        $toolName = $toolCall->function->name;
-        $toolInput = json_decode($toolCall->function->arguments);
-        $toolId = $toolCall->id;
+          $this->printColored("Tool Used: $toolName", self::TOOL_COLOR);
 
-        $this->printColored("Tool Used: $toolName", self::TOOL_COLOR);
+          $result = $this->executeTool($toolName, $toolInput);
 
-        $result = $this->executeTool($toolName, $toolInput);
+          $this->printColored("Tool Result: $result", self::RESULT_COLOR, FALSE);
 
-        $this->printColored("Tool Result: $result", self::RESULT_COLOR, FALSE);
+          // Add the tool use message to the conversation history.
+          $this->conversationHistory[] = $this->model->createToolUseMessage($toolId, $toolName, $toolInput);
 
-        // Add the tool use message to the conversation history.
-        $this->conversationHistory[] = $this->model->createToolUseMessage($toolId, $toolName, $toolInput);
+          // Add the tool result message to the conversation history.
+          $this->conversationHistory[] = $this->model->createToolResultMessage($toolId, $result);
+        }
 
-        // Add the tool result message to the conversation history.
-        $this->conversationHistory[] = $this->model->createToolResultMessage($toolId, $result);
+        $messages = $this->conversationHistory;
+        $data = $this->model->chat($systemPrompt, $messages);
+
+        if (!$data) {
+          return [
+            "I'm sorry, there was an error processing the message. Please try again.",
+            FALSE,
+          ];
+        }
+
+        foreach ($data as $message) {
+          if ($this->model->isTextMessage($message)) {
+            $assistantResponse .= $message->content . " ";
+          }
+        }
       }
-
-      $messages = $this->conversationHistory;
-
-      $data = $this->model->chat($systemPrompt, $messages);
-
-      if (!$data) {
-        return [
-          "I'm sorry, there was an error processing the message. Please try again.",
-          FALSE,
-        ];
-      }
-
-      $assistantResponse .= $data->choices[0]->message->content . " ";
-    }
-    else {
-      $assistantResponse .= $message->content . " ";
-      if (strpos($message->content, $this->continuationExitPhrase) !== FALSE) {
-        $exitContinuation = TRUE;
+      else {
+        $assistantResponse .= $message->content . " ";
+        if (strpos($message->content, $this->continuationExitPhrase) !== FALSE) {
+          $exitContinuation = TRUE;
+        }
       }
     }
 

@@ -310,29 +310,31 @@ class DrupalAiChat extends DrushCommands {
     $assistantResponse = "";
     $exitContinuation = FALSE;
 
-    foreach ($data->content as $contentBlock) {
-      if ($contentBlock->type == "text") {
+    foreach ($data as $contentBlock) {
+      if ($this->model->isTextMessage($contentBlock)) {
         $assistantResponse .= $contentBlock->text . " ";
         if (strpos($contentBlock->text, $this->continuationExitPhrase) !== FALSE) {
           $exitContinuation = TRUE;
         }
       }
-      elseif ($contentBlock->type == "tool_use") {
-        $toolName = $contentBlock->name;
-        $toolInput = $contentBlock->input;
-        $toolUseId = $contentBlock->id;
+      elseif ($this->model->isToolMessage($contentBlock)) {
+        foreach ($this->model->toolCalls($contentBlock) as $toolCall) {
+          $toolName = $toolCall->name;
+          $toolInput = $toolCall->input;
+          $toolUseId = $toolCall->id;
 
-        $this->printColored("Tool Used: $toolName", self::TOOL_COLOR);
+          $this->printColored("Tool Used: $toolName", self::TOOL_COLOR);
 
-        $result = $this->executeTool($toolName, $toolInput);
+          $result = $this->executeTool($toolName, $toolInput);
 
-        $this->printColored("Tool Result: $result", self::RESULT_COLOR);
+          $this->printColored("Tool Result: $result", self::RESULT_COLOR);
 
-        // Add the tool use message to the conversation history.
-        $this->conversationHistory[] = $this->model->createToolUseMessage($toolUseId, $toolName, $toolInput);
+          // Add the tool use message to the conversation history.
+          $this->conversationHistory[] = $this->model->createToolUseMessage($toolUseId, $toolName, $toolInput);
 
-        // Add the tool result message to the conversation history.
-        $this->conversationHistory[] = $this->model->createToolResultMessage($toolUseId, $result);
+          // Add the tool result message to the conversation history.
+          $this->conversationHistory[] = $this->model->createToolResultMessage($toolUseId, $result);
+        }
 
         $messages = $this->conversationHistory;
         $data = $this->model->chat($systemPrompt, $messages);
@@ -344,8 +346,8 @@ class DrupalAiChat extends DrushCommands {
           ];
         }
 
-        foreach ($data->content as $toolContentBlock) {
-          if ($toolContentBlock->type == "text") {
+        foreach ($data as $toolContentBlock) {
+          if ($this->model->isTextMessage($toolContentBlock)) {
             $assistantResponse .= $toolContentBlock->text . " ";
           }
         }
