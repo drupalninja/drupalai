@@ -33,7 +33,7 @@ class DrupalAiHelper {
   protected static $tools = [
     [
       "name" => "create_files",
-      "description" => "Create new files at the specified path with content. Use this when you need to create new files in the project structure.",
+      "description" => "Create new files at the specified path with content. Use this when you need to create new files in the project structure. This tool expects an array of file objects, where each object has a `path` and `content` property.",
       "input_schema" => [
         "type" => "object",
         "properties" => [

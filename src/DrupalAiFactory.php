@@ -4,7 +4,6 @@ namespace Drupal\drupalai;
 
 use Drupal\drupalai\Models\DrupalAiChatClaude3;
 use Drupal\drupalai\Models\DrupalAiChatGemini;
-use Drupal\drupalai\Models\DrupalAiChatLlama3;
 use Drupal\drupalai\Models\DrupalAiChatOpenAi;
 
 /**

@@ -240,7 +240,7 @@ class DrupalAiChat extends DrushCommands {
       case 'create_files':
         $results = [];
 
-        if (is_array($toolInput->files)) {
+        if (isset($toolInput->files) && is_array($toolInput->files)) {
           foreach ($toolInput->files as $file) {
             $content = trim(stripcslashes($file->content));
             $results[] = DrupalAiHelper::createFile($file->path, $content ?? '');
@@ -352,8 +352,9 @@ class DrupalAiChat extends DrushCommands {
           $this->printColored("Tool Used: $toolName", self::TOOL_COLOR);
 
           $result = $this->executeTool($toolName, $toolInput);
+          $resultExcerpt = strlen($result) > 100 ? substr($result, 0, 300) . "..." : $result;
 
-          $this->printColored("Tool Result: $result", self::RESULT_COLOR, FALSE);
+          $this->printColored("Tool Result: $resultExcerpt", self::RESULT_COLOR, FALSE);
 
           // Add the tool use message to the conversation history.
           $this->conversationHistory[] = $this->model->createToolUseMessage($toolId, $toolName, $toolInput);

@@ -268,7 +268,7 @@ class DrupalAiChatGemini implements DrupalAiChatInterface {
     $tool = new \stdClass();
     $tool->name = $message->functionCall->name;
     $tool->input = $message->functionCall->args;
-    $tool->id = 'N/A';
+    $tool->id = 'gemini' . uniqid();
     $tools[] = $tool;
 
     return $tools;
