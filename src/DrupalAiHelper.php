@@ -438,6 +438,19 @@ class DrupalAiHelper {
   }
 
   /**
+   * Scrape URL.
+   *
+   * @param string $url
+   *   The URL to scrape.
+   *
+   * @return string
+   *   The scraped content.
+   */
+  public static function scrapeUrl($url) {
+    return file_get_contents($url);
+  }
+
+  /**
    * Create File With Path.
    *
    * @param string $file_path
