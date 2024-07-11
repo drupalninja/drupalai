@@ -66,23 +66,26 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
     $client = new Client();
 
     try {
+      $headers = [
+        'Content-Type' => 'application/json',
+        'Authorization' => 'Bearer ' . $api_key,
+      ];
+      $json = [
+        'model' => $this->model,
+        'messages' => array_merge(
+          [
+            ['role' => 'system', 'content' => $systemPrompt],
+          ],
+          $messages
+        ),
+        'tools' => DrupalAiHelper::getChatTools('openai'),
+        'tool_choice' => $toolChoice,
+        'max_tokens' => 4096,
+      ];
+
       $response = $client->request('POST', $url, [
-        'headers' => [
-          'Content-Type' => 'application/json',
-          'Authorization' => 'Bearer ' . $api_key,
-        ],
-        'json' => [
-          'model' => $this->model,
-          'messages' => array_merge(
-            [
-              ['role' => 'system', 'content' => $systemPrompt],
-            ],
-            $messages
-          ),
-          'tools' => DrupalAiHelper::getChatTools('openai'),
-          'tool_choice' => $toolChoice,
-          'max_tokens' => 4096,
-        ],
+        'headers' => $headers,
+        'json' => $json,
       ]);
     }
     catch (\Exception $e) {
@@ -193,16 +196,33 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
    *   The message array.
    */
   public function createToolUseMessage(string $toolUseId, string $toolName, object $toolInput): array {
-    return [
-      "role" => "assistant",
-      "content" => '',
-      "tools" => [
-        [
-          "name" => $toolName,
-          "parameters" => $toolInput,
+    if ($this->provider == 'openai') {
+      return [
+        "role" => "assistant",
+        "content" => '',
+        "tools" => [
+          [
+            "name" => $toolName,
+            "parameters" => $toolInput,
+          ],
         ],
-      ],
-    ];
+      ];
+    }
+    else {
+      return [
+        "role" => "assistant",
+        "tool_calls" => [
+          [
+            "id" => $toolUseId,
+            "type" => 'function',
+            "function" => [
+              "name" => $toolName,
+              "arguments" => json_encode($toolInput),
+            ],
+          ],
+        ],
+      ];
+    }
   }
 
   /**
