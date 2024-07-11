@@ -72,10 +72,16 @@ class DrupalAiChat extends DrushCommands {
   /**
    * Constructs a new DrupalAiChat object.
    */
-  public function __construct() {
+  public function __construct($modelName = NULL) {
     $this->continuationExitPhrase = 'AUTOMODE_COMPLETE';
     $this->maxContinuationIterations = 25;
     $this->systemPrompt = drupalai_get_prompt('chat');
+
+    // Set the AI model if provided.
+    if ($modelName) {
+      $this->modelName = $modelName;
+      $this->model = DrupalAiFactory::build($this->modelName);
+    }
   }
 
   /**
@@ -95,11 +101,11 @@ class DrupalAiChat extends DrushCommands {
     $this->printColored("While in automode, press Ctrl+C at any time to exit the automode to return to regular chat.", self::MODEL_COLOR, FALSE);
 
     // Prompt user for the AI model to use.
-    $this->modelName = $this->io()->choice('Select the AI model to use', DrupalAiHelper::getModels(), 0);
+    $this->modelName = $this->askUserSelect("Select the AI model to use", DrupalAiHelper::getModels(), 0);
     $this->model = DrupalAiFactory::build($this->modelName);
 
     while (TRUE) {
-      $userInput = $this->io()->ask(self::USER_COLOR . "You");
+      $userInput = $this->askUserForInput(self::USER_COLOR . "You");
 
       if (trim($userInput) == '') {
         // Tell the user to enter something.
@@ -142,11 +148,11 @@ class DrupalAiChat extends DrushCommands {
           continue;
         }
 
-        $imageUrl = $this->io()->ask(self::USER_COLOR . "Enter URL for image here");
+        $imageUrl = $this->askUserForInput(self::USER_COLOR . "Enter URL for image here");
 
         // Check if the image URL is valid.
         if (filter_var($imageUrl, FILTER_VALIDATE_URL)) {
-          $userInput = $this->io()->ask(self::USER_COLOR . "You (prompt for image)");
+          $userInput = $this->askUserForInput(self::USER_COLOR . "You (prompt for image)");
           [$response] = $this->chatWithModel($userInput, $imageUrl);
           $this->processAndDisplayResponse($response);
         }
@@ -162,7 +168,7 @@ class DrupalAiChat extends DrushCommands {
         $this->printColored("Entering automode with $maxIterations iterations. Press Ctrl+C to exit automode at any time.", self::TOOL_COLOR);
         $this->printColored("Press Ctrl+C at any time to exit the automode loop.", self::TOOL_COLOR);
 
-        $userInput = $this->io()->ask(self::USER_COLOR . "You");
+        $userInput = $this->askUserForInput(self::USER_COLOR . "You");
         $iterationCount = 0;
 
         try {
@@ -314,7 +320,7 @@ class DrupalAiChat extends DrushCommands {
    * @return array
    *   The assistant response and the exit continuation status.
    */
-  protected function chatWithModel($userInput, $imageUrl = NULL, $currentIteration = NULL, $maxIterations = NULL) {
+  public function chatWithModel($userInput, $imageUrl = NULL, $currentIteration = NULL, $maxIterations = NULL) {
     if ($imageUrl) {
       $this->printColored("Processing image at Url: $imageUrl", self::TOOL_COLOR);
 
@@ -422,12 +428,63 @@ class DrupalAiChat extends DrushCommands {
   }
 
   /**
+   * Asks the user for input.
+   *
+   * @param string $prompt
+   *   The message to ask the user.
+   *
+   * @return string
+   *   The user input.
+   */
+  protected function askUserForInput($prompt) {
+    echo $prompt;
+    return trim(fgets(STDIN));
+  }
+
+  /**
+   * Asks the user to select an option.
+   *
+   * @param string $prompt
+   *   The message to ask the user.
+   * @param array $choices
+   *   The choices to present to the user.
+   * @param int $defaultIndex
+   *   The default choice index.
+   *
+   * @return string
+   *   The selected choice.
+   */
+  protected function askUserSelect($prompt, array $choices, $defaultIndex = 0): string {
+    echo $prompt . PHP_EOL;
+
+    foreach ($choices as $index => $choice) {
+      echo "[" . ($index + 1) . "] " . $choice . PHP_EOL;
+    }
+
+    echo "Enter your choice (default " . ($defaultIndex + 1) . "): ";
+    $input = trim(fgets(STDIN));
+
+    // Determine the selected index.
+    if ($input === '') {
+      $selectedIndex = $defaultIndex;
+    }
+    else {
+      $selectedIndex = intval($input) - 1;
+      if ($selectedIndex < 0 || $selectedIndex >= count($choices)) {
+        $selectedIndex = $defaultIndex;
+      }
+    }
+
+    return $choices[$selectedIndex];
+  }
+
+  /**
    * Processes and displays a response.
    *
    * @param string $response
    *   The response to process and display.
    */
-  protected function processAndDisplayResponse($response): void {
+  public function processAndDisplayResponse($response): void {
     if (strpos($response, "Error") === 0 || strpos($response, "I'm sorry") === 0) {
       $this->printColored($response, self::TOOL_COLOR);
     }
@@ -503,7 +560,7 @@ class DrupalAiChat extends DrushCommands {
    *   Whether to add a new line.
    */
   protected function printColored($text, $color, $newLine = TRUE): void {
-    $this->output()->writeln($color . $text . ($newLine ? "\n" : " "));
+    echo $color . $text . ($newLine ? "\n" : " ");
   }
 
 }
