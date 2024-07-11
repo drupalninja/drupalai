@@ -91,6 +91,7 @@ class DrupalAiChat extends DrushCommands {
     $this->printColored("Type 'exit' to end the conversation.", self::MODEL_COLOR, FALSE);
     $this->printColored("Type 'image' to include an image in your message.", self::MODEL_COLOR, FALSE);
     $this->printColored("Type 'automode [number]' to enter Autonomous mode with a specific number of iterations.", self::MODEL_COLOR, FALSE);
+    $this->printColored("Type 'scrape' to scrape a website page.", self::MODEL_COLOR, FALSE);
     $this->printColored("While in automode, press Ctrl+C at any time to exit the automode to return to regular chat.", self::MODEL_COLOR, FALSE);
 
     // Prompt user for the AI model to use.
@@ -111,7 +112,31 @@ class DrupalAiChat extends DrushCommands {
         break;
       }
 
-      if (strtolower($userInput) == 'image') {
+      if (strtolower($userInput) == 'scrape') {
+        $url = $this->io()->ask(self::USER_COLOR . "Enter URL to scrape here");
+
+        // Check if the URL is valid.
+        if (filter_var($url, FILTER_VALIDATE_URL)) {
+          $this->printColored("Scraping URL: $url", self::TOOL_COLOR);
+          $html = DrupalAiHelper::scrapeUrl($url);
+
+          // Check if the scraping was successful.
+          if (strpos($html, "Error") === 0) {
+            $this->printColored($html, self::TOOL_COLOR);
+            continue;
+          }
+
+          $userInput = "Describe this web page: $html";
+
+          [$response] = $this->chatWithModel($userInput);
+          $this->processAndDisplayResponse($response);
+        }
+        else {
+          $this->printColored("Invalid URL. Please try again.", self::MODEL_COLOR);
+          continue;
+        }
+      }
+      elseif (strtolower($userInput) == 'image') {
         if ($this->modelName == 'gpt-3.5-turbo-0125' || $this->modelName == 'gemini') {
           $this->printColored("Image support supported for this model.", self::MODEL_COLOR);
           continue;
