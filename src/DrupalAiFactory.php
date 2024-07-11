@@ -42,13 +42,22 @@ class DrupalAiFactory {
       return new DrupalAiChatClaude3($model);
     }
     elseif (strpos($model, 'gpt') === 0) {
-      $api_key = $config->get('openai_api_key');
+      $api_key = $config->get('openai_api_key', 'openai');
 
       if (!$api_key) {
         throw new \Exception('OpenAI key not set.');
       }
 
       return new DrupalAiChatOpenAi($model);
+    }
+    elseif (strpos($model, 'llama') === 0) {
+      $api_key = $config->get('groq_api_key');
+
+      if (!$api_key) {
+        throw new \Exception('Groq key not set.');
+      }
+
+      return new DrupalAiChatOpenAi($model, 'groq');
     }
 
     throw new \Exception('Invalid model');

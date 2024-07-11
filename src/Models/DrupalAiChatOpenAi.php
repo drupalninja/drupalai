@@ -19,10 +19,16 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
   private string $model;
 
   /**
+   * The provider to use.
+   */
+  private string $provider;
+
+  /**
    * Constructor.
    */
-  public function __construct($model) {
+  public function __construct($model, $provider = 'openai') {
     $this->model = $model;
+    $this->provider = $provider;
   }
 
   /**
@@ -40,14 +46,22 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
    */
   public function chat(string $systemPrompt, array $messages, string $toolChoice = 'auto'): array|bool {
     $config = \Drupal::config('drupalai.settings');
-    $api_key = $config->get('openai_api_key');
+
+    $api_key = '';
+
+    if ($this->provider == 'openai') {
+      $api_key = $config->get('openai_api_key');
+      $url = 'https://api.openai.com/v1/chat/completions';
+    }
+    else {
+      $api_key = $config->get('groq_api_key');
+      $url = 'https://api.groq.com/openai/v1/chat/completions';
+    }
 
     if (!$api_key) {
       \Drupal::logger('drupalai')->error('OpenAI API key not set.');
       return FALSE;
     }
-
-    $url = 'https://api.openai.com/v1/chat/completions';
 
     $client = new Client();
 
@@ -72,12 +86,12 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
       ]);
     }
     catch (\Exception $e) {
-      \Drupal::logger('drupalai')->error('Error calling OpenAI API: ' . $e->getMessage());
+      \Drupal::logger('drupalai')->error('Error calling ' . $this->provider . ' API: ' . $e->getMessage());
       return FALSE;
     }
 
     if ($response->getStatusCode() != 200) {
-      \Drupal::logger('drupalai')->error('Error calling OpenAI API: ' . $response->getStatusCode() . ' ' . $response->getReasonPhrase());
+      \Drupal::logger('drupalai')->error('Error calling ' . $this->provider . ' API: ' . $response->getStatusCode() . ' ' . $response->getReasonPhrase());
       return FALSE;
     }
     else {

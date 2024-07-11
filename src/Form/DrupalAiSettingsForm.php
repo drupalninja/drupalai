@@ -70,6 +70,13 @@ class DrupalAiSettingsForm extends ConfigFormBase {
       '#description' => $this->t('Enter the API key for Tavily.'),
     ];
 
+    $form['api_settings']['groq_api_key'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Groq.com API Key'),
+      '#default_value' => $config->get('groq_api_key') ?? '',
+      '#description' => $this->t('Enter the API key for Groq.com.'),
+    ];
+
     $form['ai_settings_instructions'] = [
       '#type' => 'item',
       '#markup' => '<p>' . $this->t('These settings are used to configure the AI settings for the module.') . '</p>',
@@ -88,6 +95,7 @@ class DrupalAiSettingsForm extends ConfigFormBase {
     $config->set('gemini_api_key', $form_state->getValue('gemini_api_key'));
     $config->set('claude3_api_key', $form_state->getValue('claude3_api_key'));
     $config->set('tavily_api_key', $form_state->getValue('tavily_api_key'));
+    $config->set('groq_api_key', $form_state->getValue('groq_api_key'));
     $config->save();
 
     parent::submitForm($form, $form_state);

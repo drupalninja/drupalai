@@ -23,6 +23,7 @@ class DrupalAiHelper {
     'claude-3-haiku-20240307' => 'Claude 3 Haiku',
     'claude-3-opus-20240229' => 'Claude 3 Opus',
     'claude-3-sonnet-20240229' => 'Claude 3.5 Sonnet',
+    'llama3-70b-8192' => 'Llama3 70b 8192 (Groq)',
   ];
 
   /**
