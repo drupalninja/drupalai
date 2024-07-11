@@ -100,19 +100,6 @@ class DrupalAiHelper {
       ],
     ],
     [
-      "name" => "list_files",
-      "description" => "List all files and directories for a path relative to the Drupal root directory. Use this when you need to see the contents of the current directory.",
-      "input_schema" => [
-        "type" => "object",
-        "properties" => [
-          "path" => [
-            "type" => "string",
-            "description" => "The path of the folder to list files in. Defaults to the current project directory.",
-          ],
-        ],
-      ],
-    ],
-    [
       "name" => "tavily_search",
       "description" => "Perform a web search using Tavily API to get up-to-date information or additional context. Use this when you need current information or feel a search could provide a better answer.",
       "input_schema" => [
@@ -210,7 +197,7 @@ class DrupalAiHelper {
       foreach ($files as $file) {
         $filePath = $fullPath . '/' . $file;
         if (is_file($filePath)) {
-          $content .= file_get_contents($filePath) . "\n";
+          $content .= "File: $file\n" . file_get_contents($filePath) . "\n";
         }
       }
       return $content;
@@ -218,7 +205,7 @@ class DrupalAiHelper {
     else {
       if (file_exists($fullPath)) {
         try {
-          return "\n" . file_get_contents($fullPath);
+          return "File: $path\n" . file_get_contents($fullPath);
         }
         catch (\Exception $e) {
           return "Error reading file: " . $e->getMessage();
@@ -227,32 +214,6 @@ class DrupalAiHelper {
       else {
         return "File not found: $path";
       }
-    }
-  }
-
-  /**
-   * Lists files in a directory.
-   *
-   * @param string $path
-   *   The path of the directory to list files in.
-   *
-   * @return string
-   *   The list of files.
-   */
-  public static function listFiles($path = "."): string {
-    // Get the full path relative to the Drupal root directory.
-    $fullPath = DRUPAL_ROOT . '/' . $path;
-
-    if (!is_dir($fullPath)) {
-      return "Directory not found: $path";
-    }
-
-    try {
-      $files = array_diff(scandir($fullPath), ['.', '..']);
-      return "\n" . implode("\n", $files);
-    }
-    catch (\Exception $e) {
-      return "Error listing files: " . $e->getMessage();
     }
   }
 

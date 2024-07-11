@@ -98,10 +98,13 @@ class DrupalAiChat extends DrushCommands {
     $this->printColored("Type 'image' to include an image in your message.", self::MODEL_COLOR, FALSE);
     $this->printColored("Type 'automode [number]' to enter Autonomous mode with a specific number of iterations.", self::MODEL_COLOR, FALSE);
     $this->printColored("Type 'scrape' to scrape a website page.", self::MODEL_COLOR, FALSE);
-    $this->printColored("While in automode, press Ctrl+C at any time to exit the automode to return to regular chat.", self::MODEL_COLOR, FALSE);
+    $this->printColored("While in automode, press Ctrl+C at any time to exit the automode to return to regular chat.", self::MODEL_COLOR);
 
     // Prompt user for the AI model to use.
-    $this->modelName = $this->askUserSelect("Select the AI model to use", DrupalAiHelper::getModels(), 0);
+    $this->modelName = $this->askUserSelect("Select the AI model to use: ", DrupalAiHelper::getModels(), 0);
+    $this->printColored("Selected model: $this->modelName", self::MODEL_COLOR);
+
+    // Build the AI model.
     $this->model = DrupalAiFactory::build($this->modelName);
 
     while (TRUE) {
@@ -114,31 +117,19 @@ class DrupalAiChat extends DrushCommands {
       }
 
       if (strtolower($userInput) == 'exit') {
-        $this->printColored("Thank you for chatting. Goodbye!", self::MODEL_COLOR, FALSE);
+        $this->printColored("Thank you for chatting. Goodbye!", self::MODEL_COLOR);
         break;
       }
 
       if (strtolower($userInput) == 'scrape') {
-        $url = $this->io()->ask(self::USER_COLOR . "Enter URL to scrape here");
+        $url = $this->askUserForInput(self::USER_COLOR . "Enter URL to scrape here");
+        $response = $this->scrapeUrl($url);
 
-        // Check if the URL is valid.
-        if (filter_var($url, FILTER_VALIDATE_URL)) {
-          $this->printColored("Scraping URL: $url", self::TOOL_COLOR);
-          $html = DrupalAiHelper::scrapeUrl($url);
-
-          // Check if the scraping was successful.
-          if (strpos($html, "Error") === 0) {
-            $this->printColored($html, self::TOOL_COLOR);
-            continue;
-          }
-
-          $userInput = "Describe this web page: $html";
-
-          [$response] = $this->chatWithModel($userInput);
+        if ($response) {
           $this->processAndDisplayResponse($response);
         }
         else {
-          $this->printColored("Invalid URL. Please try again.", self::MODEL_COLOR);
+          $this->printColored("Invalid URL or scraping failed. Please try again.", self::MODEL_COLOR);
           continue;
         }
       }
@@ -206,6 +197,51 @@ class DrupalAiChat extends DrushCommands {
         [$response] = $this->chatWithModel($userInput);
         $this->processAndDisplayResponse($response);
       }
+    }
+  }
+
+  /**
+   * Scrapes a URL.
+   *
+   * @param string $url
+   *   The URL to scrape.
+   *
+   * @return string|bool
+   *   The scraping response or FALSE if an error occurred.
+   */
+  public function scrapeUrl($url): string|bool {
+    try {
+      $htmlContents = DrupalAiHelper::scrapeUrl($url);
+      $userInput = "Please give me a one sentence summary of this content: $htmlContents";
+
+      [$reponse] = $this->chatWithModel($userInput);
+      return $reponse;
+    }
+    catch (\Exception $e) {
+      \Drupal::logger('drupalai')->error('Error scraping URL: ' . $e->getMessage());
+      return FALSE;
+    }
+  }
+
+  /**
+   * Imports files.
+   *
+   * @param string $path
+   *   The path to import files from.
+   *
+   * @return string
+   *   The import response or an error message if an error occurred.
+   */
+  public function importFiles($path): string {
+    $fileContents = DrupalAiHelper::readFile($path);
+
+    if ($fileContents) {
+      $userInput = "Please give me a one sentence summary of this content: $fileContents";
+      [$response] = $this->chatWithModel($userInput);
+      return $response;
+    }
+    else {
+      return "No file contents found at the specified path.";
     }
   }
 
@@ -294,9 +330,6 @@ class DrupalAiChat extends DrushCommands {
       case 'read_file':
         return DrupalAiHelper::readFile($toolInput->path);
 
-      case 'list_files':
-        return DrupalAiHelper::listFiles($toolInput->path ?? '.');
-
       case 'tavily_search':
         return $this->tavilySearch($toolInput->query);
 
@@ -320,7 +353,7 @@ class DrupalAiChat extends DrushCommands {
    * @return array
    *   The assistant response and the exit continuation status.
    */
-  public function chatWithModel($userInput, $imageUrl = NULL, $currentIteration = NULL, $maxIterations = NULL) {
+  public function chatWithModel($userInput, $imageUrl = NULL, $currentIteration = NULL, $maxIterations = NULL): array {
     if ($imageUrl) {
       $this->printColored("Processing image at Url: $imageUrl", self::TOOL_COLOR);
 
@@ -383,9 +416,8 @@ class DrupalAiChat extends DrushCommands {
           $this->printColored("Tool Used: $toolName", self::TOOL_COLOR);
 
           $result = $this->executeTool($toolName, $toolInput);
-          $resultExcerpt = strlen($result) > 100 ? substr($result, 0, 300) . "..." : $result;
 
-          $this->printColored("Tool Result: $resultExcerpt", self::RESULT_COLOR, FALSE);
+          $this->printColored("Tool Result: $result", self::RESULT_COLOR);
 
           // Add the tool use message to the conversation history.
           $this->conversationHistory[] = $this->model->createToolUseMessage($toolId, $toolName, $toolInput);
@@ -437,7 +469,7 @@ class DrupalAiChat extends DrushCommands {
    *   The user input.
    */
   protected function askUserForInput($prompt) {
-    echo $prompt;
+    echo "\n" . $prompt . ": ";
     return trim(fgets(STDIN));
   }
 
@@ -455,13 +487,15 @@ class DrupalAiChat extends DrushCommands {
    *   The selected choice.
    */
   protected function askUserSelect($prompt, array $choices, $defaultIndex = 0): string {
-    echo $prompt . PHP_EOL;
+    echo "\n" . self::USER_COLOR . $prompt . PHP_EOL;
 
-    foreach ($choices as $index => $choice) {
-      echo "[" . ($index + 1) . "] " . $choice . PHP_EOL;
+    $index = 0;
+
+    foreach ($choices as $choice) {
+      echo " [" . $index++ . "] " . $choice . PHP_EOL;
     }
 
-    echo "Enter your choice (default " . ($defaultIndex + 1) . "): ";
+    echo "\nEnter your choice (default " . $defaultIndex . "): ";
     $input = trim(fgets(STDIN));
 
     // Determine the selected index.
@@ -469,13 +503,18 @@ class DrupalAiChat extends DrushCommands {
       $selectedIndex = $defaultIndex;
     }
     else {
-      $selectedIndex = intval($input) - 1;
-      if ($selectedIndex < 0 || $selectedIndex >= count($choices)) {
-        $selectedIndex = $defaultIndex;
+      $selectedIndex = intval($input);
+    }
+
+    $index = 0;
+
+    foreach ($choices as $key => $choice) {
+      if ($index++ == $selectedIndex) {
+        return $key;
       }
     }
 
-    return $choices[$selectedIndex];
+    return '';
   }
 
   /**
@@ -486,7 +525,7 @@ class DrupalAiChat extends DrushCommands {
    */
   public function processAndDisplayResponse($response): void {
     if (strpos($response, "Error") === 0 || strpos($response, "I'm sorry") === 0) {
-      $this->printColored($response, self::TOOL_COLOR);
+      $this->printColored($response, self::TOOL_COLOR, TRUE);
     }
     else {
       if (strpos($response, "```") !== FALSE) {
@@ -508,7 +547,7 @@ class DrupalAiChat extends DrushCommands {
         }
       }
       else {
-        $this->printColored($response, self::MODEL_COLOR);
+        $this->printColored($response, self::MODEL_COLOR, TRUE);
       }
     }
   }
@@ -560,7 +599,7 @@ class DrupalAiChat extends DrushCommands {
    *   Whether to add a new line.
    */
   protected function printColored($text, $color, $newLine = TRUE): void {
-    echo $color . $text . ($newLine ? "\n" : " ");
+    echo "\n" . $color . $text . ($newLine ? "\n" : " ");
   }
 
 }
