@@ -312,7 +312,7 @@ class DrupalAiChat extends DrushCommands {
             $content = trim(stripcslashes($file->content));
             $results[] = DrupalAiHelper::createFile($file->path, $content ?? '');
           }
-          return "\n" . implode("\n", $results);
+          return "\n" . trim(implode("\n", $results));
         }
         else {
           return "Invalid input for create_files tool.";
@@ -417,7 +417,7 @@ class DrupalAiChat extends DrushCommands {
 
           $result = $this->executeTool($toolName, $toolInput);
 
-          $this->printColored("Tool Result: $result", self::RESULT_COLOR);
+          $this->printColored("Tool Result: $result", self::RESULT_COLOR, FALSE);
 
           // Add the tool use message to the conversation history.
           $this->conversationHistory[] = $this->model->createToolUseMessage($toolId, $toolName, $toolInput);
