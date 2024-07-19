@@ -17,6 +17,7 @@ class DrupalAiHelper {
    */
   protected static $models = [
     'gpt-4o' => 'ChatGPT-4o',
+    'gpt-4o-mini' => 'ChatGPT-4o-mini',
     'gpt-3.5-turbo-0125' => 'ChatGPT 3.5 Turbo',
     'gemini-1.5-flash' => 'Gemini 1.5 Flash',
     'gemini-1.5-pro' => 'Gemini 1.5 Pro',
