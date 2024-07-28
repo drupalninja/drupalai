@@ -101,8 +101,9 @@ class DrupalAiChat extends DrushCommands {
     $this->printColored("While in automode, press Ctrl+C at any time to exit the automode to return to regular chat.", self::MODEL_COLOR);
 
     // Prompt user for the AI model to use.
+    $models = DrupalAiHelper::getModels();
     $this->modelName = $this->askUserSelect("Select the AI model to use: ", DrupalAiHelper::getModels(), 0);
-    $this->printColored("Selected model: $this->modelName", self::MODEL_COLOR);
+    $this->printColored("Selected model: {$models[$this->modelName]}", self::MODEL_COLOR);
 
     // Build the AI model.
     $this->model = DrupalAiFactory::build($this->modelName);

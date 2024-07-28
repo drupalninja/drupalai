@@ -23,7 +23,16 @@ class DrupalAiFactory {
   public static function build($model): DrupalAiChatInterface {
     $config = \Drupal::config('drupalai.settings');
 
-    if (strpos($model, 'gemini') === 0) {
+    if (strstr($model, 'fireworks')) {
+      $api_key = $config->get('fireworks_api_key');
+
+      if (!$api_key) {
+        throw new \Exception('Fireworks AI key not set.');
+      }
+
+      return new DrupalAiChatOpenAi($model, 'fireworks');
+    }
+    elseif (strpos($model, 'gemini') === 0) {
       $api_key = $config->get('gemini_api_key');
 
       if (!$api_key) {

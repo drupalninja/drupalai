@@ -53,6 +53,10 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
       $api_key = $config->get('openai_api_key');
       $url = 'https://api.openai.com/v1/chat/completions';
     }
+    elseif ($this->provider == 'fireworks') {
+      $api_key = $config->get('fireworks_api_key');
+      $url = 'https://api.fireworks.ai/inference/v1/chat/completions';
+    }
     else {
       $api_key = $config->get('groq_api_key');
       $url = 'https://api.groq.com/openai/v1/chat/completions';
