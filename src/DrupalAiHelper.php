@@ -16,6 +16,7 @@ class DrupalAiHelper {
    * @var array
    */
   protected static $models = [
+    'gpt-4o-mini' => 'ChatGPT-4o-mini',
     'gpt-4o' => 'ChatGPT-4o',
     'gpt-3.5-turbo-0125' => 'ChatGPT 3.5 Turbo',
     'gemini-1.5-flash' => 'Gemini 1.5 Flash',
@@ -97,19 +98,6 @@ class DrupalAiHelper {
         ],
         "required" => [
           "path",
-        ],
-      ],
-    ],
-    [
-      "name" => "list_files",
-      "description" => "List all files and directories for a path relative to the Drupal root directory. Use this when you need to see the contents of the current directory.",
-      "input_schema" => [
-        "type" => "object",
-        "properties" => [
-          "path" => [
-            "type" => "string",
-            "description" => "The path of the folder to list files in. Defaults to the current project directory.",
-          ],
         ],
       ],
     ],
@@ -211,7 +199,7 @@ class DrupalAiHelper {
       foreach ($files as $file) {
         $filePath = $fullPath . '/' . $file;
         if (is_file($filePath)) {
-          $content .= file_get_contents($filePath) . "\n";
+          $content .= "File: $file\n" . file_get_contents($filePath) . "\n";
         }
       }
       return $content;
@@ -219,7 +207,7 @@ class DrupalAiHelper {
     else {
       if (file_exists($fullPath)) {
         try {
-          return "\n" . file_get_contents($fullPath);
+          return "File: $path\n" . file_get_contents($fullPath);
         }
         catch (\Exception $e) {
           return "Error reading file: " . $e->getMessage();
@@ -228,32 +216,6 @@ class DrupalAiHelper {
       else {
         return "File not found: $path";
       }
-    }
-  }
-
-  /**
-   * Lists files in a directory.
-   *
-   * @param string $path
-   *   The path of the directory to list files in.
-   *
-   * @return string
-   *   The list of files.
-   */
-  public static function listFiles($path = "."): string {
-    // Get the full path relative to the Drupal root directory.
-    $fullPath = DRUPAL_ROOT . '/' . $path;
-
-    if (!is_dir($fullPath)) {
-      return "Directory not found: $path";
-    }
-
-    try {
-      $files = array_diff(scandir($fullPath), ['.', '..']);
-      return "\n" . implode("\n", $files);
-    }
-    catch (\Exception $e) {
-      return "Error listing files: " . $e->getMessage();
     }
   }
 
@@ -436,6 +398,19 @@ class DrupalAiHelper {
     }
 
     return $content;
+  }
+
+  /**
+   * Scrape URL.
+   *
+   * @param string $url
+   *   The URL to scrape.
+   *
+   * @return string
+   *   The scraped content.
+   */
+  public static function scrapeUrl($url) {
+    return file_get_contents($url);
   }
 
   /**
