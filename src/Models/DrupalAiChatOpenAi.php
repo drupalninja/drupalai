@@ -74,6 +74,7 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
         'Content-Type' => 'application/json',
         'Authorization' => 'Bearer ' . $api_key,
       ];
+
       $json = [
         'model' => $this->model,
         'messages' => array_merge(
@@ -82,7 +83,7 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
           ],
           $messages
         ),
-        'tools' => DrupalAiHelper::getChatTools('openai'),
+        'tools' => DrupalAiHelper::getChatTools($this->provider),
         'tool_choice' => $toolChoice,
         'max_tokens' => 4096,
       ];
