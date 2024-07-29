@@ -36,7 +36,7 @@ class DrupalAiSettingsForm extends ConfigFormBase {
     ];
 
     $form['system_prompt'] = [
-      '#type' => 'textfield',
+      '#type' => 'textarea',
       '#title' => $this->t('System Prompt'),
       '#default_value' => $config->get('system_prompt') ?? drupalai_get_prompt('chat'),
       '#description' => $this->t('Enter the system prompt for the AI.'),
