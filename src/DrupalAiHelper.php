@@ -487,14 +487,14 @@ class DrupalAiHelper {
   }
 
   /**
-   * Method to get field definitions of block content types and paragraph types.
+   * Method to get field definitions of all content types, paragraph types, and taxonomies.
    *
    * @return string
    *   The field definitions in plain text format.
    */
-  public static function getBlockFieldDefinitions() {
+  public static function getContentDefinitions() {
     // Check if the field definitions data is in the cache.
-    $cache = \Drupal::cache()->get('block_field_definitions_data');
+    $cache = \Drupal::cache()->get('content_field_definitions_data');
 
     if ($cache) {
       // Return the cached data if available.
@@ -504,45 +504,43 @@ class DrupalAiHelper {
     // Load the entity type manager service.
     $entity_type_manager = \Drupal::entityTypeManager();
 
-    // Get all custom block content types.
-    $block_content_type_storage = $entity_type_manager->getStorage('block_content_type');
-
-    // Load all custom block content types.
-    $block_content_types = $block_content_type_storage->loadMultiple();
+    // Get all node types.
+    $node_type_storage = $entity_type_manager->getStorage('node_type');
+    $node_types = $node_type_storage->loadMultiple();
 
     // Get all paragraph types.
     $paragraph_type_storage = $entity_type_manager->getStorage('paragraphs_type');
-
-    // Load all paragraph types.
     $paragraph_types = $paragraph_type_storage->loadMultiple();
+
+    // Get all taxonomy vocabularies.
+    $vocabulary_storage = $entity_type_manager->getStorage('taxonomy_vocabulary');
+    $vocabularies = $vocabulary_storage->loadMultiple();
 
     // Initialize an array to store field definitions.
     $field_definitions_data = [];
 
-    // Process block content types.
-    foreach ($block_content_types as $block_content_type) {
-      // Get block type ID and label.
-      $block_type_id = $block_content_type->id();
-      $block_type_label = $block_content_type->label();
-
-      // Load field definitions for this block type.
-      $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions('block_content', $block_type_id);
-
-      // Add block content type field definitions to the data array.
-      self::addFieldDefinitionsToData($field_definitions_data, 'block_content', $block_type_id, $block_type_label, $field_definitions);
+    // Process node types.
+    foreach ($node_types as $node_type) {
+      $type_id = $node_type->id();
+      $type_label = $node_type->label();
+      $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions('node', $type_id);
+      self::addFieldDefinitionsToData($field_definitions_data, 'node', $type_id, $type_label, $field_definitions);
     }
 
     // Process paragraph types.
     foreach ($paragraph_types as $paragraph_type) {
-      // Get paragraph type ID and label.
-      $paragraph_type_id = $paragraph_type->id();
-      $paragraph_type_label = $paragraph_type->label();
+      $type_id = $paragraph_type->id();
+      $type_label = $paragraph_type->label();
+      $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions('paragraph', $type_id);
+      self::addFieldDefinitionsToData($field_definitions_data, 'paragraph', $type_id, $type_label, $field_definitions);
+    }
 
-      // Load field definitions for this paragraph type.
-      $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions('paragraph', $paragraph_type_id);
-
-      // Add paragraph type field definitions to the data array.
-      self::addFieldDefinitionsToData($field_definitions_data, 'paragraph', $paragraph_type_id, $paragraph_type_label, $field_definitions);
+    // Process taxonomy vocabularies.
+    foreach ($vocabularies as $vocabulary) {
+      $type_id = $vocabulary->id();
+      $type_label = $vocabulary->label();
+      $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions('taxonomy_term', $type_id);
+      self::addFieldDefinitionsToData($field_definitions_data, 'taxonomy_term', $type_id, $type_label, $field_definitions);
     }
 
     // Convert the data array to plain text.
@@ -552,7 +550,7 @@ class DrupalAiHelper {
     }
 
     // Store the data in cache.
-    \Drupal::cache()->set('block_field_definitions_data', $plain_text_data, CacheBackendInterface::CACHE_PERMANENT);
+    \Drupal::cache()->set('content_field_definitions_data', $plain_text_data, CacheBackendInterface::CACHE_PERMANENT);
 
     // Return the plain text data.
     return $plain_text_data;
