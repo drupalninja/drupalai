@@ -136,7 +136,7 @@ class DrupalAiChat extends DrushCommands {
       }
       elseif (strtolower($userInput) == 'image') {
         if ($this->modelName == 'gpt-3.5-turbo-0125' || $this->modelName == 'gemini') {
-          $this->printColored("Image support supported for this model.", self::MODEL_COLOR);
+          $this->printColored("Image not supported for this model.", self::MODEL_COLOR);
           continue;
         }
 
@@ -359,7 +359,7 @@ class DrupalAiChat extends DrushCommands {
       $this->printColored("Processing image at Url: $imageUrl", self::TOOL_COLOR);
 
       // Encode the image to base64 if this is not a GPT model.
-      if ($this->modelName == 'gpt-4o') {
+      if ($this->modelName == 'gpt-4o' || $this->modelName == 'gpt-4o-mini') {
         // Add the image message to the conversation history.
         $this->conversationHistory[] = $this->model->createImageMessage($imageUrl, $userInput);
       }
