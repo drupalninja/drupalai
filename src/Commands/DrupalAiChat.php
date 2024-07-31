@@ -337,7 +337,13 @@ class DrupalAiChat extends DrushCommands {
         return $this->tavilySearch($toolInput->query);
 
       default:
-        return "Unknown tool: $toolName";
+        // Look to see if the tool exists as a custom function.
+        if (function_exists('drupalai_tool_' . $toolName)) {
+          return call_user_func('drupalai_tool_' . $toolName, $toolInput);
+        }
+        else {
+          return "Tool not found.";
+        }
     }
   }
 

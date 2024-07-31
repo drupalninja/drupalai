@@ -292,6 +292,16 @@ class DrupalAiHelper {
   }
 
   /**
+   * Add Chat Tools.
+   *
+   * @param array $tools
+   *   The chat tools to add.
+   */
+  public static function addChatTools($tools) {
+    self::$tools = array_merge(self::$tools, $tools);
+  }
+
+  /**
    * Get Chat Tools.
    *
    * @param string $type
