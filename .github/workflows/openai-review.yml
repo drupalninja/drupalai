@@ -36,7 +36,7 @@ jobs:
       id: openai_review
       run: |
         DIFF_CONTENT=$(cat diff.txt)
-        PROMPT="You are a senior developer reviewing a pull request. Here is the diff:\n\n${DIFF_CONTENT}\n\nPlease review the code and provide feedback. If it is acceptable, respond with \"APPROVE\". If there are issues, respond with \"FAIL\" followed by your feedback."
+        "You are a Drupal 10 senior developer reviewing a pull request. The following diff shows lines that have been added or removed as well as context:\n\n${DIFF_CONTENT}\n\nIf the changes are acceptable, respond with "APPROVE". If there are issues, respond with "FAIL" followed by your feedback on the specific changes. Please focus your review on the lines that have been added or removed."
 
         # Escape the prompt for JSON
         ESCAPED_PROMPT=$(echo "$PROMPT" | jq -Rs .)
