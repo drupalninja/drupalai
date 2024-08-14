@@ -26,6 +26,7 @@ class DrupalAiHelper {
     'claude-3-sonnet-20240229' => 'Claude 3.5 Sonnet',
     'llama3-70b-8192' => 'Llama3 70b (Groq)',
     'accounts/fireworks/models/firefunction-v2' => 'Firefunction V2 (Fireworks AI)',
+    'llama3.1' => 'Llama3.1 8b (Ollama)',
   ];
 
   /**
@@ -319,7 +320,7 @@ class DrupalAiHelper {
       foreach ($tools as &$tool) {
         $tool['parameters'] = $tool['input_schema'];
         unset($tool['input_schema']);
-        if ($type == 'openai' || $type == 'fireworks' || $type == 'groq') {
+        if ($type == 'openai' || $type == 'fireworks' || $type == 'groq' || $type == 'ollama') {
           $new_tools[] = [
             'type' => 'function',
             'function' => $tool,

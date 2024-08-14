@@ -59,6 +59,9 @@ class DrupalAiFactory {
 
       return new DrupalAiChatOpenAi($model);
     }
+    elseif ($model === 'llama3.1') {
+      return new DrupalAiChatOpenAi($model, 'ollama');
+    }
     elseif (strpos($model, 'llama') === 0) {
       $api_key = $config->get('groq_api_key');
 

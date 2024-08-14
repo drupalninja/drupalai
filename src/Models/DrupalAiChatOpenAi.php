@@ -49,7 +49,11 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
 
     $api_key = '';
 
-    if ($this->provider == 'openai') {
+    if ($this->provider == 'ollama') {
+      $ollama_address = 'http://host.docker.internal:11434';
+      $url = $ollama_address . '/api/chat';
+    }
+    elseif ($this->provider == 'openai') {
       $api_key = $config->get('openai_api_key');
       $url = 'https://api.openai.com/v1/chat/completions';
     }
@@ -62,10 +66,10 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
       $url = 'https://api.groq.com/openai/v1/chat/completions';
     }
 
-    if (!$api_key) {
-      \Drupal::logger('drupalai')->error('OpenAI API key not set.');
-      return FALSE;
-    }
+    // if (!$api_key) {
+    //   \Drupal::logger('drupalai')->error('OpenAI API key not set.');
+    //   return FALSE;
+    // }
 
     $client = new Client();
 
@@ -88,6 +92,10 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
         'max_tokens' => 4096,
       ];
 
+      if ($this->provider == 'ollama') {
+        $json['stream'] = FALSE;
+      }
+
       $response = $client->request('POST', $url, [
         'headers' => $headers,
         'json' => $json,
@@ -104,7 +112,13 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
     }
     else {
       $data = $response->getBody()->getContents();
-      return [json_decode($data)->choices[0]->message];
+
+      if ($this->provider == 'ollama') {
+        return [json_decode($data)->message];
+      }
+      else {
+        return [json_decode($data)->choices[0]->message];
+      }
     }
   }
 
@@ -268,12 +282,23 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
   public function toolCalls(object $message): array {
     $tools = [];
 
-    foreach ($message->tool_calls as $toolCall) {
-      $tool = new \stdClass();
-      $tool->name = $toolCall->function->name;
-      $tool->input = json_decode($toolCall->function->arguments);
-      $tool->id = $toolCall->id;
-      $tools[] = $tool;
+    if ($this->provider != 'ollama') {
+      foreach ($message->tool_calls as $toolCall) {
+        $tool = new \stdClass();
+        $tool->name = $toolCall->function->name;
+        $tool->input = json_decode($toolCall->function->arguments);
+        $tool->id = $toolCall->id;
+        $tools[] = $tool;
+      }
+    }
+    else {
+      foreach ($message->tool_calls as $toolCall) {
+        $tool = new \stdClass();
+        $tool->name = $toolCall->function->name;
+        $tool->input = $toolCall->function->arguments;
+        $tool->id = 'llama-' . uniqid();
+        $tools[] = $tool;
+      }
     }
 
     return $tools;
