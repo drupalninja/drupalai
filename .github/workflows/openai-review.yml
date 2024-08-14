@@ -36,7 +36,11 @@ jobs:
       id: openai_review
       run: |
         DIFF_CONTENT=$(cat diff.txt)
-        PROMPT="You are a Drupal 10 senior developer reviewing a pull request. The following diff shows lines that have been added or removed as well as context:\n\n${DIFF_CONTENT}\n\nYour review should focus on identifying specific issues such as clear-cut problems, errors, logic errors, or deviations from coding standards. Avoid subjective opinions or recommendations. If the changes meet the necessary standards, respond with 'APPROVE'. If you find any issues, respond with 'FAIL' followed by your feedback on the specific changes."
+        PROMPT="You are a Drupal 10 senior developer reviewing a pull request.
+        The following diff shows lines that have been added or removed as well
+        as context:\n\n${DIFF_CONTENT}\n\nPlease review the changes and provide
+        any recommended improvements or point out specific issues. Focus your
+        feedback on the lines that have been added or removed."
 
         # Escape the prompt for JSON
         ESCAPED_PROMPT=$(echo "$PROMPT" | jq -Rs .)
@@ -62,11 +66,9 @@ jobs:
       id: parse_response
       run: |
         REVIEW=$(cat response.txt | jq -r '.choices[0].message.content')
-        STATUS=$(echo "$REVIEW" | grep -q "APPROVE" && echo "APPROVED" || echo "FAILED")
         echo "review<<EOF" >> $GITHUB_OUTPUT
         echo "$REVIEW" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
-        echo "status=$STATUS" >> $GITHUB_OUTPUT
 
     - name: Create comment
       uses: peter-evans/create-or-update-comment@v3
@@ -74,10 +76,6 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         issue-number: ${{ github.event.pull_request.number }}
         body: |
-          OpenAI Review Result: ${{ steps.parse_response.outputs.status }}
+          OpenAI Review Result:
 
           ${{ steps.parse_response.outputs.review }}
-
-    - name: Check review status
-      if: steps.parse_response.outputs.status == 'FAILED'
-      run: exit 1
