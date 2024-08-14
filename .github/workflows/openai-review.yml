@@ -36,12 +36,7 @@ jobs:
       id: openai_review
       run: |
         DIFF_CONTENT=$(cat diff.txt)
-        PROMPT="You are a Drupal 10 senior developer reviewing a pull request.
-        The following diff shows lines that have been added or removed as well
-        as context:\n\n${DIFF_CONTENT}\n\nIf the changes are acceptable, respond
-        with "APPROVE". If there are issues, respond with "FAIL" followed by
-        your feedback on the specific changes. Please focus your review on the
-        lines that have been added or removed."
+        PROMPT="You are a Drupal 10 senior developer reviewing a pull request. The following diff shows lines that have been added or removed as well as context:\n\n${DIFF_CONTENT}\n\nYour review should focus on identifying specific issues such as clear-cut problems, errors, logic errors, or deviations from coding standards. Avoid subjective opinions or recommendations. If the changes meet the necessary standards, respond with 'APPROVE'. If you find any issues, respond with 'FAIL' followed by your feedback on the specific changes."
 
         # Escape the prompt for JSON
         ESCAPED_PROMPT=$(echo "$PROMPT" | jq -Rs .)
