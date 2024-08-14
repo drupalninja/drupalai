@@ -50,7 +50,7 @@ jobs:
               \"role\": \"user\",
               \"content\": $ESCAPED_PROMPT
             }],
-            \"max_tokens\": 4096
+            \"max_tokens\": 500
           }")
         echo "$RESPONSE" > response.txt
 
@@ -72,18 +72,32 @@ jobs:
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
-          const review = `${{ steps.parse_response.outputs.review }}`;
-          const status = '${{ steps.parse_response.outputs.status }}';
+          const fs = require('fs');
 
-          let comment = `OpenAI Review Result: ${status.toUpperCase()}\n\n${review}`;
+          // Read the review from the file
+          const reviewContent = fs.readFileSync('response.txt', 'utf8');
 
-          github.rest.issues.createComment({
+          // Parse the JSON response
+          const reviewData = JSON.parse(reviewContent);
+
+          // Extract the review text
+          const review = reviewData.choices[0].message.content;
+
+          // Determine the status
+          const status = review.includes('APPROVE') ? 'APPROVED' : 'FAILED';
+
+          // Construct the comment
+          const comment = `OpenAI Review Result: ${status}\n\n${review}`;
+
+          // Post the comment
+          await github.rest.issues.createComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
             body: comment
           });
 
-          if (status === 'failed') {
+          // Set the action status
+          if (status === 'FAILED') {
             core.setFailed('OpenAI review failed. See comment for details.');
           }
