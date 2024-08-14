@@ -50,18 +50,40 @@ jobs:
               \"role\": \"user\",
               \"content\": $ESCAPED_PROMPT
             }],
-            \"max_tokens\": 500
+            \"max_tokens\": 4096
           }")
         echo "$RESPONSE" > response.txt
 
     - name: Parse OpenAI Response
       id: parse_response
       run: |
-        REVIEW=$(cat response.txt)
-        echo "$REVIEW"
+        REVIEW=$(cat response.txt | jq -r '.choices[0].message.content')
+        echo "review<<EOF" >> $GITHUB_OUTPUT
+        echo "$REVIEW" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
         if echo "$REVIEW" | grep -q "APPROVE"; then
-          echo "PR approved by OpenAI."
+          echo "status=approved" >> $GITHUB_OUTPUT
         else
-          echo "$REVIEW" >> $GITHUB_STEP_SUMMARY
-          exit 1
+          echo "status=failed" >> $GITHUB_OUTPUT
         fi
+
+    - name: Comment on PR
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          const review = `${{ steps.parse_response.outputs.review }}`;
+          const status = '${{ steps.parse_response.outputs.status }}';
+
+          let comment = `OpenAI Review Result: ${status.toUpperCase()}\n\n${review}`;
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+
+          if (status === 'failed') {
+            core.setFailed('OpenAI review failed. See comment for details.');
+          }
