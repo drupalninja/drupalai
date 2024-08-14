@@ -1,0 +1,44 @@
+name: PR Review with OpenAI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Get PR Diff
+      run: |
+        git fetch origin +refs/pull/${{ github.event.pull_request.number }}/merge
+        git diff origin/main...HEAD > diff.txt
+
+    - name: Send Diff to OpenAI
+      id: openai_review
+      run: |
+        DIFF_CONTENT=$(cat diff.txt)
+        RESPONSE=$(curl https://api.openai.com/v1/completions \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{ secrets.OPENAI_API_KEY }}" \
+          -d '{
+            "model": "gpt-4o-mini",
+            "prompt": "You are a senior developer reviewing a pull request. Here is the diff:\n\n'"$DIFF_CONTENT"'\n\nPlease review the code and provide feedback. If it is acceptable, respond with \"APPROVE\". If there are issues, respond with \"FAIL\" followed by your feedback.",
+            "max_tokens": 500
+          }')
+        echo "$RESPONSE" > response.txt
+
+    - name: Parse OpenAI Response
+      id: parse_response
+      run: |
+        REVIEW=$(cat response.txt)
+        echo "$REVIEW"
+        if echo "$REVIEW" | grep -q "APPROVE"; then
+          echo "PR approved by OpenAI."
+        else
+          echo "$REVIEW" >> $GITHUB_STEP_SUMMARY
+          exit 1  # Exit with an error status to mark the job as failed
+        fi
