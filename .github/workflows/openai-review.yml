@@ -17,11 +17,11 @@ jobs:
         git fetch origin +refs/pull/${{ github.event.pull_request.number }}/merge:pr-merge
         git fetch origin 2.x:2.x
 
-    - name: Diff PR against 2.x branch
-      run: git diff 2.x...pr-merge > diff.txt
+    - name: Ensure we're on the PR merge commit
+      run: git checkout pr-merge
 
     - name: Get PR Diff
-      run: git diff 2.x...pr-merge > diff.txt  # Compare against the fetched merge ref
+      run: git diff 2.x pr-merge > diff.txt
 
     - name: Print Diff for Debugging
       run: |
