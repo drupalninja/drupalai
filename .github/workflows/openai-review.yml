@@ -12,13 +12,19 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Fetch the pull request ref
+    - name: Fetch the pull request ref and 2.x branch
       run: |
-        git fetch origin +refs/pull/${{ github.event.pull_request.number }}/merge
+        git fetch origin +refs/pull/${{ github.event.pull_request.number }}/merge:pr-merge
+        git fetch origin 2.x:2.x
 
     - name: Get PR Diff
       run: |
-        git diff FETCH_HEAD > diff.txt  # Compare against the fetched merge ref
+        run: git diff 2.x...pr-merge > diff.txt  # Compare against the fetched merge ref
+
+    - name: Print Diff for Debugging
+      run: |
+        echo "Content of diff.txt:"
+        cat diff.txt
 
     - name: Send Diff to OpenAI
       id: openai_review
@@ -28,7 +34,7 @@ jobs:
 
         # Print the prompt to the console
         echo "Prompt sent to OpenAI:"
-        echo "$PROMPT"
+        printf "%s\n" "$PROMPT"
         RESPONSE=$(curl https://api.openai.com/v1/chat/completions \
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer ${{ secrets.OPENAI_API_KEY }}" \
