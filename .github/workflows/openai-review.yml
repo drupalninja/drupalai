@@ -12,10 +12,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Get PR Diff
+    - name: Fetch the pull request ref
       run: |
         git fetch origin +refs/pull/${{ github.event.pull_request.number }}/merge
-        git diff origin/2.x...HEAD > diff.txt
+
+    - name: Get PR Diff
+      run: |
+        git diff FETCH_HEAD > diff.txt  # Compare against the fetched merge ref
 
     - name: Send Diff to OpenAI
       id: openai_review
@@ -40,5 +43,5 @@ jobs:
           echo "PR approved by OpenAI."
         else
           echo "$REVIEW" >> $GITHUB_STEP_SUMMARY
-          exit 1  # Exit with an error status to mark the job as failed
+          exit 1
         fi
