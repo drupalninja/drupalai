@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  pull-requests: write
+  issues: write
+
 jobs:
   review:
     runs-on: ubuntu-latest
@@ -67,6 +71,7 @@ jobs:
     - name: Create comment
       uses: peter-evans/create-or-update-comment@v3
       with:
+        token: ${{ secrets.GITHUB_TOKEN }}
         issue-number: ${{ github.event.pull_request.number }}
         body: |
           OpenAI Review Result: ${{ steps.parse_response.outputs.status }}
