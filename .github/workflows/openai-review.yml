@@ -32,22 +32,26 @@ jobs:
       id: openai_review
       run: |
         DIFF_CONTENT=$(cat diff.txt)
-        PROMPT="You are a senior developer reviewing a pull request. Here is the diff:\n\n$DIFF_CONTENT\n\nPlease review the code and provide feedback. If it is acceptable, respond with \"APPROVE\". If there are issues, respond with \"FAIL\" followed by your feedback."
+        PROMPT="You are a senior developer reviewing a pull request. Here is the diff:\n\n${DIFF_CONTENT}\n\nPlease review the code and provide feedback. If it is acceptable, respond with \"APPROVE\". If there are issues, respond with \"FAIL\" followed by your feedback."
+
+        # Escape the prompt for JSON
+        ESCAPED_PROMPT=$(echo "$PROMPT" | jq -Rs .)
 
         # Print the prompt to the console
         echo "Prompt sent to OpenAI:"
-        printf "%s\n" "$PROMPT"
+        echo "$PROMPT"
+
         RESPONSE=$(curl https://api.openai.com/v1/chat/completions \
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer ${{ secrets.OPENAI_API_KEY }}" \
-          -d '{
-            "model": "gpt-4o-mini",
-            "messages": [{
-              "role": "user",
-              "content": "'"$PROMPT"'"
+          -d "{
+            \"model\": \"gpt-4-turbo-preview\",
+            \"messages\": [{
+              \"role\": \"user\",
+              \"content\": $ESCAPED_PROMPT
             }],
-            "max_tokens": 500
-          }')
+            \"max_tokens\": 500
+          }")
         echo "$RESPONSE" > response.txt
 
     - name: Parse OpenAI Response
