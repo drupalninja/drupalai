@@ -10,7 +10,7 @@ The Drupal AI module provides drush commands for generating code with AI.
 
 ## Installation
 1. To install with Composer run the command:
-  
+
    ```
    composer require drupalninja/drupalai
    ```
@@ -28,7 +28,7 @@ The Drupal AI module provides drush commands for generating code with AI.
 
 ## Requirements
 - Drupal 10.x
-- PHP 7.4 or higher
+- PHP 8.1 or higher
 
 ## Usage
 
