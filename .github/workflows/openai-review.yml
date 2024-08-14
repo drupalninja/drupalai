@@ -15,7 +15,7 @@ jobs:
     - name: Get PR Diff
       run: |
         git fetch origin +refs/pull/${{ github.event.pull_request.number }}/merge
-        git diff origin/10.x...HEAD > diff.txt
+        git diff origin/2.x...HEAD > diff.txt
 
     - name: Send Diff to OpenAI
       id: openai_review
