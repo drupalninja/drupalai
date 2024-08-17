@@ -428,6 +428,8 @@ class DrupalAiChat extends DrushCommands {
 
           $this->printColored("Tool Result: $result", self::RESULT_COLOR, FALSE);
 
+          $assistantResponse .= $result;
+
           // Add the tool use message to the conversation history.
           $this->conversationHistory[] = $this->model->createToolUseMessage($toolId, $toolName, $toolInput);
 
@@ -447,7 +449,7 @@ class DrupalAiChat extends DrushCommands {
 
         foreach ($data as $message) {
           if ($this->model->isTextMessage($message)) {
-            $assistantResponse = $this->model->getTextMessage($message);
+            $assistantResponse .= $this->model->getTextMessage($message);
           }
         }
       }
