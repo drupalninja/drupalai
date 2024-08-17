@@ -422,11 +422,11 @@ class DrupalAiChat extends DrushCommands {
           $toolInput = $toolCall->input;
           $toolId = $toolCall->id;
 
-          $this->printColored("Tool Used: $toolName", self::TOOL_COLOR);
+          $this->printColored("Tool Used: $toolName", self::TOOL_COLOR, FALSE);
 
           $result = $this->executeTool($toolName, $toolInput);
 
-          $this->printColored("Tool Result: $result", self::RESULT_COLOR, FALSE);
+          $this->printColored("Tool Result: $result", self::RESULT_COLOR);
 
           $assistantResponse .= $result;
 
