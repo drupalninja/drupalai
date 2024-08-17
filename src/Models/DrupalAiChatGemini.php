@@ -104,7 +104,7 @@ class DrupalAiChatGemini implements DrupalAiChatInterface {
             $messages
           ),
           'tools' => [
-            "functionDeclarations" => DrupalAiHelper::getChatTools('gemini'),
+            "function_declarations" => DrupalAiHelper::getChatTools('gemini'),
           ],
           "tool_config" => $toolConfig,
           'generationConfig' => $generation_config,
