@@ -98,6 +98,7 @@ class DrupalAiChatOpenAi implements DrupalAiChatInterface {
       return FALSE;
     }
 
+    // Check for errors.
     if ($response->getStatusCode() != 200) {
       \Drupal::logger('drupalai')->error('Error calling ' . $this->provider . ' API: ' . $response->getStatusCode() . ' ' . $response->getReasonPhrase());
       return FALSE;
